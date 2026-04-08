@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Flow Pro | Gestão de Estúdio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; letter-spacing: -0.01em; }
+        .drag-ghost { opacity: 0.4; transform: scale(0.95); }
+        .drop-target { background-color: #f1f5f9; border: 2px dashed #6366f1 !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .task-card { border-left-width: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .task-card:hover { transform: translateY(-1px); filter: brightness(0.98); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm shrink-0 z-20">
+        <div class="flex items-center gap-10">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <h1 class="text-xl font-extrabold tracking-tight text-slate-800">Production<span class="text-indigo-600">Flow</span></h1>
+            </div>
+            
+            <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <input type="text" id="workspaceInput" placeholder="Nome da Área..." class="bg-transparent border-none text-xs font-bold px-3 py-1 outline-none text-indigo-600 w-32" onchange="changeWorkspace(this.value)">
+                <span class="text-[10px] text-slate-400 font-bold uppercase pr-2">Workspace</span>
+            </div>
+
+            <nav class="flex bg-slate-100 p-1 rounded-xl border border-slate-200" id="editorTabs">
+                <button onclick="switchEditor(1)" id="tab-1" class="px-6 py-1.5 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-indigo-600">Editor 1</button>
+                <button onclick="switchEditor(2)" id="tab-2" class="px-6 py-1.5 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-800">Editor 2</button>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <button onclick="shareLink()" class="group flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 shadow-sm">
+                <svg class="group-hover:text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                Compartilhar
+            </button>
+            <div id="syncIndicator" class="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100">
+                <div id="syncDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                <span id="saveStatus" class="text-[10px] uppercase tracking-[0.1em] font-black text-slate-400 italic">Conectando...</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-[10px_0_30px_rgba(0,0,0,0.01)]">
+            <div class="p-6">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-6 italic">Cadastro de Produção</h2>
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nome do Curso</label>
+                        <input type="text" id="courseName" placeholder="Ex: Edição para YouTube" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300">
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-1/2 space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Horas</label>
+                            <input type="text" id="courseHours" placeholder="15h" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm transition-all">
+                        </div>
+                        <div class="w-1/2 space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Responsável</label>
+                            <input type="text" id="courseProducer" placeholder="Gui" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm transition-all">
+                        </div>
+                    </div>
+                    <button onclick="addCourseToCloud()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-bold text-sm transition-all shadow-lg shadow-indigo-100 active:scale-[0.97]">
+                        Adicionar Curso
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 overflow-y-auto hide-scrollbar border-t border-slate-50 bg-slate-50/30">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">Disponíveis</h2>
+                    <span id="courseCount" class="text-[10px] bg-indigo-600 px-2 py-0.5 rounded-full font-bold text-white">0</span>
+                </div>
+                <div id="coursePool" class="space-y-3">
+                    <!-- Cards dinâmicos -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-10 space-y-20 hide-scrollbar bg-[#f8fafc]">
+            <div id="calendarsWrapper" class="max-w-6xl mx-auto">
+                <!-- Calendários via JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div id="dayModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-fade-in border border-white/20">
+            <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h3 id="modalDateTitle" class="text-xl font-bold text-slate-800 tracking-tight">Gerenciar Dia</h3>
+                    <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-1">Sincronizando: <span id="modalEditorId"></span></p>
+                </div>
+                <button onclick="closeModal()" class="p-2.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400 bg-white shadow-sm border border-slate-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="modalTasksList" class="p-8 space-y-5 max-h-[55vh] overflow-y-auto hide-scrollbar">
+                <!-- Tasks -->
+            </div>
+            <div id="modalNoTasks" class="hidden p-16 text-center text-slate-400">
+                Sem tarefas planejadas.
+            </div>
+            <div class="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end">
+                <button onclick="closeModal()" class="bg-slate-900 text-white px-10 py-3.5 rounded-2xl font-bold text-sm hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200">Pronto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificação -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl text-sm font-bold opacity-0 pointer-events-none transition-all duration-500 z-[100] border border-white/10 flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+        <span id="toastMsg">Link copiado!</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        /** * CONFIGURAÇÃO DO FIREBASE
+         * Substitui o objeto abaixo se as chaves estiverem incompletas.
+         */
+        const firebaseConfig = {
+                apiKey: "AIzaSyBM3hrJnd0QrpZdsyU0aMfkLjtzd0Sxrs8",
+                authDomain: "calendario-7454b.firebaseapp.com",
+                projectId: "calendario-7454b",
+                storageBucket: "calendario-7454b.firebasestorage.app",
+                messagingSenderId: "562176495174",
+                appId: "1:562176495174:web:a5df122b30505a0c860447",
+                measurementId: "G-K58NZGG034"
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : standaloneConfig;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ESTADO GLOBAL
+        let workspace = localStorage.getItem('prod_workspace') || 'geral';
+        document.getElementById('workspaceInput').value = workspace;
+
+        let currentEditor = 1;
+        let selectedDateKey = null;
+        let user = null;
+        let cloudData = { courses: [], schedule: {} };
+        let unsubCourses = null;
+        let unsubSchedule = null;
+
+        const colorPalette = [
+            { border: '#6366f1', bg: '#f5f7ff', text: '#3730a3' }, 
+            { border: '#10b981', bg: '#f0fdf4', text: '#065f46' }, 
+            { border: '#f59e0b', bg: '#fffbeb', text: '#92400e' }, 
+            { border: '#ec4899', bg: '#fdf2f8', text: '#9d174d' }, 
+            { border: '#06b6d4', bg: '#f0f9ff', text: '#155e75' }, 
+            { border: '#8b5cf6', bg: '#f5f3ff', text: '#5b21b6' }, 
+        ];
+
+        const statusOptions = [
+            { id: 'edicao', label: 'Edição', icon: '✂️' },
+            { id: 'gravacao', label: 'Gravação', icon: '🎥' },
+            { id: 'revisao', label: 'Revisão', icon: '👀' },
+            { id: 'roteiro', label: 'Roteiro', icon: '📝' }
+        ];
+
+        async function initAuth() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        }
+
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) startSync();
+        });
+
+        function startSync() {
+            if(unsubCourses) unsubCourses();
+            if(unsubSchedule) unsubSchedule();
+
+            const statusEl = document.getElementById('saveStatus');
+            const dotEl = document.getElementById('syncDot');
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'prod-shared-app';
+            
+            unsubCourses = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `courses_${workspace}`), (snapshot) => {
+                cloudData.courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderCourses();
+                statusEl.innerText = "Online";
+                dotEl.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+            }, (error) => {
+                statusEl.innerText = "Erro/Offline";
+                dotEl.className = "w-2 h-2 rounded-full bg-red-500";
+            });
+
+            unsubSchedule = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`), (snapshot) => {
+                cloudData.schedule = {};
+                snapshot.docs.forEach(doc => { cloudData.schedule[doc.id] = doc.data().tasks; });
+                renderCalendars();
+            });
+        }
+
+        window.changeWorkspace = (val) => {
+            if(!val) return;
+            workspace = val.toLowerCase().replace(/\s+/g, '-');
+            localStorage.setItem('prod_workspace', workspace);
+            startSync();
+            showToast(`Workspace alterada para: ${workspace}`);
+        };
+
+        window.addCourseToCloud = async () => {
+            if (!user) return;
+            const name = document.getElementById('courseName').value;
+            const hours = document.getElementById('courseHours').value;
+            const prod = document.getElementById('courseProducer').value;
+            if (!name) return;
+            const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'prod-shared-app';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `courses_${workspace}`, Date.now().toString()), { name, hours, prod, color });
+            ['courseName', 'courseHours', 'courseProducer'].forEach(id => document.getElementById(id).value = '');
+        };
+
+        window.removeCourse = async (id) => {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'prod-shared-app';
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `courses_${workspace}`, id));
+        };
+
+        window.addTaskToSchedule = async (dateKey, course) => {
+            const id = `${currentEditor}_${dateKey}`;
+            const tasks = cloudData.schedule[id] || [];
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'prod-shared-app';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, id), {
+                tasks: [...tasks, { taskId: Date.now().toString(), courseName: course.name, type: 'edicao', note: '', color: course.color }]
+            });
+        };
+
+        window.updateTaskInModal = async (index, field, value) => {
+            const id = `${currentEditor}_${selectedDateKey}`;
+            const tasks = [...cloudData.schedule[id]];
+            tasks[index][field] = value;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'prod-shared-app';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, id), { tasks });
+            renderModalTasks();
+        };
+
+        window.deleteTaskFromModal = async (index) => {
+            const id = `${currentEditor}_${selectedDateKey}`;
+            const tasks = [...cloudData.schedule[id]];
+            tasks.splice(index, 1);
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'prod-shared-app';
+            if (tasks.length === 0) { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, id)); }
+            else { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, id), { tasks }); }
+            renderModalTasks();
+        };
+
+        function renderCourses() {
+            const pool = document.getElementById('coursePool');
+            document.getElementById('courseCount').innerText = cloudData.courses.length;
+            pool.innerHTML = '';
+            cloudData.courses.forEach(course => {
+                const el = document.createElement('div');
+                el.className = "bg-white p-4 border border-slate-200 rounded-2xl shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all group relative border-l-4";
+                el.style.borderLeftColor = course.color.border;
+                el.draggable = true;
+                el.innerHTML = `
+                    <div class="font-bold text-slate-800 text-sm mb-1 truncate pr-6">${course.name}</div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider italic">${course.hours} • ${course.prod}</div>
+                    <button onclick="removeCourse('${course.id}')" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                `;
+                el.addEventListener('dragstart', (e) => { e.dataTransfer.setData('courseId', course.id); el.classList.add('drag-ghost'); });
+                el.addEventListener('dragend', () => el.classList.remove('drag-ghost'));
+                pool.appendChild(el);
+            });
+        }
+
+        window.switchEditor = (id) => {
+            currentEditor = id;
+            document.querySelectorAll('#editorTabs button').forEach(btn => btn.className = "px-6 py-1.5 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-800");
+            document.getElementById(`tab-${id}`).className = "px-6 py-1.5 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-indigo-600";
+            renderCalendars();
+        };
+
+        function renderCalendars() {
+            const wrapper = document.getElementById('calendarsWrapper');
+            wrapper.innerHTML = '';
+            const now = new Date();
+            for (let i = 0; i < 3; i++) {
+                const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                wrapper.appendChild(createMonthUI(monthDate));
+            }
+        }
+
+        function createMonthUI(date) {
+            const monthName = date.toLocaleDateString('pt-br', { month: 'long', year: 'numeric' });
+            const section = document.createElement('section');
+            section.className = "mb-16 animate-fade-in";
+            section.innerHTML = `
+                <h2 class="text-2xl font-bold text-slate-800 mb-8 capitalize flex items-center gap-4"><span class="w-1.5 h-8 bg-indigo-600 rounded-full"></span> ${monthName}</h2>
+                <div class="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-[2rem] overflow-hidden shadow-2xl shadow-slate-200/50">
+                    ${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => `<div class="bg-slate-50 py-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">${d}</div>`).join('')}
+                    ${Array(new Date(date.getFullYear(), date.getMonth(), 1).getDay()).fill('<div class="bg-white/40 min-h-[170px]"></div>').join('')}
+                    ${Array.from({length: new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()}, (_, i) => i + 1).map(day => {
+                        const dateKey = `${date.getFullYear()}-${date.getMonth()}-${day}`;
+                        const isToday = new Date().toLocaleDateString() === new Date(date.getFullYear(), date.getMonth(), day).toLocaleDateString();
+                        return `<div onclick="openDayModal('${dateKey}', '${monthName}', ${day})" data-date="${dateKey}" class="bg-white min-h-[160px] p-4 flex flex-col gap-2 transition-all hover:bg-slate-50 cursor-pointer relative group day-cell">
+                                <span class="text-xs font-bold ${isToday ? 'bg-indigo-600 text-white w-7 h-7 flex items-center justify-center rounded-xl shadow-lg' : 'text-slate-300 group-hover:text-indigo-500'} transition-all">${day}</span>
+                                <div id="drop-${dateKey}" class="flex-1 space-y-2 overflow-hidden pb-2"></div>
+                            </div>`;
+                    }).join('')}
+                </div>`;
+            setTimeout(() => {
+                section.querySelectorAll('.day-cell').forEach(cell => {
+                    const dateKey = cell.dataset.date;
+                    cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.classList.add('drop-target'); });
+                    cell.addEventListener('dragleave', () => cell.classList.remove('drop-target'));
+                    cell.addEventListener('drop', (e) => {
+                        e.preventDefault(); cell.classList.remove('drop-target');
+                        const courseId = e.dataTransfer.getData('courseId');
+                        const course = cloudData.courses.find(c => c.id === courseId);
+                        if (course) addTaskToSchedule(dateKey, course);
+                    });
+                    renderTasksInCell(dateKey);
+                });
+            }, 0);
+            return section;
+        }
+
+        function renderTasksInCell(dateKey) {
+            const container = document.getElementById(`drop-${dateKey}`);
+            if (!container) return;
+            container.innerHTML = '';
+            const tasks = cloudData.schedule[`${currentEditor}_${dateKey}`] || [];
+            tasks.forEach(task => {
+                const el = document.createElement('div');
+                el.className = "p-2.5 rounded-xl border text-[10px] leading-tight font-bold shadow-sm task-card truncate bg-white";
+                el.style.borderLeftColor = task.color.border;
+                const icon = statusOptions.find(s => s.id === task.type)?.icon || '✂️';
+                el.innerHTML = `${icon} ${task.courseName}`;
+                container.appendChild(el);
+            });
+        }
+
+        window.openDayModal = (dateKey, monthName, day) => {
+            selectedDateKey = dateKey;
+            document.getElementById('dayModal').classList.remove('hidden');
+            document.getElementById('modalDateTitle').innerText = `${day} de ${monthName}`;
+            document.getElementById('modalEditorId').innerText = `Editor ${currentEditor}`;
+            renderModalTasks();
+        };
+
+        window.closeModal = () => document.getElementById('dayModal').classList.add('hidden');
+
+        function renderModalTasks() {
+            const list = document.getElementById('modalTasksList');
+            const empty = document.getElementById('modalNoTasks');
+            list.innerHTML = '';
+            const tasks = cloudData.schedule[`${currentEditor}_${selectedDateKey}`] || [];
+            if (tasks.length === 0) { empty.classList.remove('hidden'); }
+            else {
+                empty.classList.add('hidden');
+                tasks.forEach((task, index) => {
+                    const div = document.createElement('div');
+                    div.className = "bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 animate-fade-in";
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full" style="background-color: ${task.color.border}"></div>
+                                <h4 class="font-bold text-slate-800 tracking-tight">${task.courseName}</h4>
+                            </div>
+                            <button onclick="deleteTaskFromModal('${index}')" class="text-slate-300 hover:text-red-500 transition-colors p-2"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-2">Status</label>
+                                <select onchange="updateTaskInModal('${index}', 'type', this.value)" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                    ${statusOptions.map(s => `<option value="${s.id}" ${s.id === task.type ? 'selected' : ''}>${s.icon} ${s.label}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-2">Notas</label>
+                                <input type="text" value="${task.note || ''}" onchange="updateTaskInModal('${index}', 'note', this.value)" placeholder="..." class="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20">
+                            </div>
+                        </div>`;
+                    list.appendChild(div);
+                });
+            }
+        }
+
+        window.shareLink = () => { navigator.clipboard.writeText(window.location.href); showToast("Link do workspace copiado!"); };
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('opacity-0', 'pointer-events-none'); t.classList.add('opacity-100');
+            setTimeout(() => { t.classList.add('opacity-0', 'pointer-events-none'); t.classList.remove('opacity-100'); }, 3500);
+        }
+
+        initAuth();
+    </script>
+</body>
+</html>
