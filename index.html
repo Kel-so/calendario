@@ -211,18 +211,18 @@
     </div>
 
     <!-- Barra Flutuante de Chat (Fica fixa na tela principal) -->
-    <div id="floating-bar" class="fixed bottom-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-zinc-900/40 backdrop-blur-[32px] border border-white/10 p-2.5 rounded-full z-40 flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-zinc-900/50">
+    <div id="floating-bar" class="fixed bottom-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-zinc-900/40 backdrop-blur-[32px] border border-white/10 p-2.5 rounded-full z-40 flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-zinc-900/50 cursor-pointer">
         <!-- Ícone para abrir análise rápida -->
-        <button onclick="requestFullAnalysis()" class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center cursor-pointer ml-1 transition-all glow-active border border-white/20" title="Análise Rápida">
+        <button onclick="requestFullAnalysis(event)" class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center cursor-pointer ml-1 transition-all glow-active border border-white/20 z-50" title="Análise Rápida">
             <svg class="w-5 h-5 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
             </svg>
         </button>
         <!-- Input Fake para acionar o chat real -->
-        <form id="floating-form" class="flex-1 flex gap-2">
-            <input type="text" id="floating-input" placeholder="Pergunte ao Assistente..." autocomplete="off" class="flex-1 bg-transparent border-none text-white focus:outline-none px-3 text-[15px] placeholder-zinc-400 !shadow-none !bg-transparent !p-0">
-            <button type="submit" class="w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all transform hover:scale-105 flex-shrink-0 mr-1">
-                <i class="fa-solid fa-arrow-up text-sm"></i>
+        <form id="floating-form" class="flex-1 flex gap-2 pointer-events-none">
+            <input type="text" id="floating-input" placeholder="Pergunte ao Assistente..." autocomplete="off" class="flex-1 bg-transparent border-none text-white focus:outline-none px-3 text-[15px] placeholder-zinc-400 !shadow-none !bg-transparent !p-0 pointer-events-auto">
+            <button type="submit" class="w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all transform hover:scale-105 flex-shrink-0 mr-1 pointer-events-auto">
+                <i class="fa-solid fa-arrow-up text-sm pointer-events-none"></i>
             </button>
         </form>
     </div>
@@ -269,10 +269,27 @@
     </div>
 
     <!-- LÓGICA DO APLICATIVO -->
-    <script>
-        const state = { income: 0, card: 0, others: 0, goals: [], history: [] };
+    <script type="module">
+        // Importações do Firebase SDK via CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis Globais de Ambiente
+        let firebaseConfig = {};
+        try { firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}'); } catch(e) {}
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'finance-master-app';
         const apiKey = ""; 
 
+        const state = { income: 0, card: 0, others: 0, goals: [], history: [] };
+        let currentUser = null;
+
+        // Init Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Referências da DOM
         const els = {
             inputIncome: document.getElementById('input-income'),
             inputCard: document.getElementById('input-card'),
@@ -300,58 +317,169 @@
             modalInput: document.getElementById('modal-input')
         };
 
+        // --- SISTEMA DE AUTENTICAÇÃO ---
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erro na autenticação do Firebase:", error);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                setupFirebaseListeners();
+            }
+        });
+
+        // --- CONEXÃO DE DADOS (FIRESTORE) ---
+        function setupFirebaseListeners() {
+            // Escutando os totais (Renda, Cartão, Outros)
+            const summaryRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'monthly', 'data');
+            onSnapshot(summaryRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Só atualiza o input se o usuário não estiver digitando nele, para evitar bugs na tela
+                    if (document.activeElement !== els.inputIncome) els.inputIncome.value = data.income || 0;
+                    if (document.activeElement !== els.inputCard) els.inputCard.value = data.card || 0;
+                    if (document.activeElement !== els.inputOthers) els.inputOthers.value = data.others || 0;
+                    updateFinancialsLocal();
+                }
+            }, (err) => console.error("Erro no Listener de Resumo:", err));
+
+            // Escutando o Histórico
+            const historyCol = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'history');
+            onSnapshot(historyCol, (snapshot) => {
+                state.history = [];
+                snapshot.forEach(doc => state.history.push({ id: doc.id, ...doc.data() }));
+                // Ordena do mais recente para o mais antigo
+                state.history.sort((a, b) => b.timestamp - a.timestamp);
+                renderHistory();
+            }, (err) => console.error("Erro no Listener de Histórico:", err));
+
+            // Escutando as Metas
+            const goalsCol = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'goals');
+            onSnapshot(goalsCol, (snapshot) => {
+                state.goals = [];
+                snapshot.forEach(doc => state.goals.push({ id: doc.id, ...doc.data() }));
+                state.goals.sort((a, b) => b.timestamp - a.timestamp);
+                renderGoals();
+            }, (err) => console.error("Erro no Listener de Metas:", err));
+        }
+
+        async function saveSummaryToCloud() {
+            if (!currentUser) return;
+            const summaryRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'monthly', 'data');
+            await setDoc(summaryRef, {
+                income: parseFloat(els.inputIncome.value) || 0,
+                card: parseFloat(els.inputCard.value) || 0,
+                others: parseFloat(els.inputOthers.value) || 0
+            }, { merge: true });
+        }
+
+        // --- INICIALIZAÇÃO DA INTERFACE ---
         function init() {
+            // Listeners dos inputs de dinheiro (salva na nuvem quando perde o foco)
             [els.inputIncome, els.inputCard, els.inputOthers].forEach(input => {
-                input.addEventListener('input', updateFinancials);
+                input.addEventListener('change', () => {
+                    updateFinancialsLocal();
+                    saveSummaryToCloud();
+                });
+                input.addEventListener('input', updateFinancialsLocal); // Só atualiza a barrinha na hora
             });
             
-            // Set data de hoje no input de histórico
             document.getElementById('trans-date').value = new Date().toISOString().split('T')[0];
             
             els.transForm.addEventListener('submit', handleAddTransaction);
             els.goalForm.addEventListener('submit', handleAddGoal);
             
-            // Listeners para os dois inputs de chat
+            // Listeners do Chat
             els.floatingForm.addEventListener('submit', (e) => handleChatSubmit(e, els.floatingInput));
             els.modalForm.addEventListener('submit', (e) => handleChatSubmit(e, els.modalInput));
             
-            // Focar input do modal se o usuário clicar no input flutuante
+            els.floatingBar.addEventListener('click', (e) => {
+                if (els.chatModal.classList.contains('chat-closed')) window.toggleChat();
+            });
+            els.floatingInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (els.chatModal.classList.contains('chat-closed')) window.toggleChat();
+            });
             els.floatingInput.addEventListener('focus', (e) => {
-                e.preventDefault();
-                toggleChat();
+                if (els.chatModal.classList.contains('chat-closed')) window.toggleChat();
             });
         }
 
-        // --- NAVEGAÇÃO DO MODAL DE CHAT ---
-        function toggleChat() {
+        // --- FUNÇÕES EXPORTADAS PARA O WINDOW (HTML) ---
+        // Como agora usamos module, o HTML não enxerga as funções automaticamente
+        
+        window.toggleChat = function() {
             const isClosed = els.chatModal.classList.contains('chat-closed');
             if (isClosed) {
-                // Abre o chat
                 els.chatModal.classList.remove('chat-closed');
                 els.chatModal.classList.add('chat-open');
                 els.floatingBar.style.opacity = '0';
                 els.floatingBar.style.pointerEvents = 'none';
-                document.body.classList.add('no-scroll'); // Trava o fundo
+                document.body.classList.add('no-scroll'); 
                 
-                // Pega texto que o user já estava digitando na barra e joga pro modal
                 if (els.floatingInput.value) {
                     els.modalInput.value = els.floatingInput.value;
                     els.floatingInput.value = '';
                 }
-                
                 setTimeout(() => els.modalInput.focus(), 300);
             } else {
-                // Fecha o chat
                 els.chatModal.classList.remove('chat-open');
                 els.chatModal.classList.add('chat-closed');
                 els.floatingBar.style.opacity = '1';
                 els.floatingBar.style.pointerEvents = 'auto';
                 document.body.classList.remove('no-scroll');
             }
-        }
+        };
 
-        // --- LÓGICA FINANCEIRA ---
-        function updateFinancials() {
+        window.requestFullAnalysis = async function(e) {
+            if (e) e.stopPropagation();
+            if (els.chatModal.classList.contains('chat-closed')) {
+                window.toggleChat();
+            }
+            const prompt = "Por favor, faça uma análise geral do meu mês atual baseada nos dados que eu informei.";
+            appendMessage('user', "Faz um resumão do meu mês aí.");
+            await processAIPrompt(prompt);
+        };
+
+        window.removeTransaction = async function(id) {
+            if (!currentUser) return;
+            const trans = state.history.find(t => t.id === id);
+            if (trans) {
+                // Desconta do total visualmente antes de salvar
+                if (trans.type === 'card') {
+                    const newVal = parseFloat(els.inputCard.value || 0) - trans.value;
+                    els.inputCard.value = newVal > 0 ? newVal.toFixed(2) : 0;
+                } else {
+                    const newVal = parseFloat(els.inputOthers.value || 0) - trans.value;
+                    els.inputOthers.value = newVal > 0 ? newVal.toFixed(2) : 0;
+                }
+                updateFinancialsLocal();
+                saveSummaryToCloud();
+
+                // Deleta da coleção no banco
+                const transRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', id.toString());
+                await deleteDoc(transRef);
+            }
+        };
+
+        window.removeGoal = async function(id) {
+            if (!currentUser) return;
+            const goalRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', id.toString());
+            await deleteDoc(goalRef);
+        };
+
+        // --- LÓGICA DE INTERFACE E CÁLCULO ---
+        function updateFinancialsLocal() {
             state.income = parseFloat(els.inputIncome.value) || 0;
             state.card = parseFloat(els.inputCard.value) || 0;
             state.others = parseFloat(els.inputOthers.value) || 0;
@@ -384,47 +512,56 @@
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
         }
 
-        // --- LÓGICA DE HISTÓRICO ---
-        function handleAddTransaction(e) {
+        // --- CONTROLES DE FORMULÁRIO ---
+        async function handleAddTransaction(e) {
             e.preventDefault();
+            if (!currentUser) return;
+
             const desc = document.getElementById('trans-desc').value;
             const value = parseFloat(document.getElementById('trans-value').value);
             const type = document.getElementById('trans-type').value;
             const date = document.getElementById('trans-date').value;
 
             if (desc && value > 0) {
-                const trans = { id: Date.now(), desc, value, type, date };
-                state.history.unshift(trans);
+                const transId = Date.now().toString();
+                const transRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', transId);
                 
+                // Dispara pro Firestore
+                await setDoc(transRef, { id: transId, desc, value, type, date, timestamp: Date.now() });
+                
+                // Atualiza e salva o resumo mensal instantaneamente
                 if (type === 'card') {
                     els.inputCard.value = (parseFloat(els.inputCard.value || 0) + value).toFixed(2);
                 } else {
                     els.inputOthers.value = (parseFloat(els.inputOthers.value || 0) + value).toFixed(2);
                 }
                 
-                updateFinancials();
+                updateFinancialsLocal();
+                saveSummaryToCloud();
+                
                 els.transForm.reset();
                 document.getElementById('trans-date').value = new Date().toISOString().split('T')[0];
-                renderHistory();
             }
         }
 
-        function removeTransaction(id) {
-            const trans = state.history.find(t => t.id === id);
-            if(trans) {
-                if (trans.type === 'card') {
-                    const newVal = parseFloat(els.inputCard.value || 0) - trans.value;
-                    els.inputCard.value = newVal > 0 ? newVal.toFixed(2) : 0;
-                } else {
-                    const newVal = parseFloat(els.inputOthers.value || 0) - trans.value;
-                    els.inputOthers.value = newVal > 0 ? newVal.toFixed(2) : 0;
-                }
-                state.history = state.history.filter(t => t.id !== id);
-                updateFinancials();
-                renderHistory();
+        async function handleAddGoal(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const name = document.getElementById('goal-name').value;
+            const target = parseFloat(document.getElementById('goal-target').value);
+            const current = parseFloat(document.getElementById('goal-current').value);
+
+            if (name && target > 0) {
+                const goalId = Date.now().toString();
+                const goalRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', goalId);
+                
+                await setDoc(goalRef, { id: goalId, name, target, current, timestamp: Date.now() });
+                els.goalForm.reset();
             }
         }
 
+        // --- RENDERIZADORES ---
         function renderHistory() {
             if (state.history.length === 0) {
                 els.emptyHistoryMsg.style.display = 'block';
@@ -439,7 +576,6 @@
             state.history.forEach(trans => {
                 const isCard = trans.type === 'card';
                 const icon = isCard ? 'fa-solid fa-credit-card text-purple-400' : 'fa-brands fa-pix text-teal-400';
-                
                 const dateParts = trans.date.split('-');
                 const shortDate = `${dateParts[2]}/${dateParts[1]}`;
 
@@ -457,32 +593,13 @@
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="text-[15px] font-bold text-zinc-100">${formatCurrency(trans.value)}</span>
-                        <button onclick="removeTransaction(${trans.id})" class="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center">
+                        <button onclick="window.removeTransaction('${trans.id}')" class="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center">
                             <i class="fa-solid fa-trash text-xs"></i>
                         </button>
                     </div>
                 `;
                 els.historyList.appendChild(el);
             });
-        }
-
-        // --- LÓGICA DE METAS ---
-        function handleAddGoal(e) {
-            e.preventDefault();
-            const name = document.getElementById('goal-name').value;
-            const target = parseFloat(document.getElementById('goal-target').value);
-            const current = parseFloat(document.getElementById('goal-current').value);
-
-            if (name && target > 0) {
-                state.goals.push({ id: Date.now(), name, target, current });
-                els.goalForm.reset();
-                renderGoals();
-            }
-        }
-
-        function removeGoal(id) {
-            state.goals = state.goals.filter(g => g.id !== id);
-            renderGoals();
         }
 
         function renderGoals() {
@@ -502,7 +619,7 @@
                 const goalEl = document.createElement('div');
                 goalEl.className = 'bg-white/5 border border-white/10 p-5 rounded-3xl relative group item-enter hover:bg-white/10 transition-colors shadow-sm';
                 goalEl.innerHTML = `
-                    <button onclick="removeGoal(${goal.id})" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <button onclick="window.removeGoal('${goal.id}')" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <i class="fa-solid fa-trash text-xs"></i>
                     </button>
                     <div class="flex justify-between items-end mb-3 pr-8">
@@ -520,15 +637,16 @@
             });
         }
 
-        // --- LÓGICA DA IA ---
+        // --- SISTEMA DE IA E CHAT ---
         async function handleChatSubmit(e, inputEl) {
             e.preventDefault();
             const text = inputEl.value.trim();
-            if (!text) return;
 
-            // Se mandou pela barra flutuante sem estar focado, abre o modal
             if (els.chatModal.classList.contains('chat-closed')) {
-                toggleChat();
+                window.toggleChat();
+                if (!text) return; 
+            } else if (!text) {
+                return; 
             }
 
             els.floatingInput.value = '';
@@ -538,15 +656,6 @@
             await processAIPrompt(text);
         }
 
-        async function requestFullAnalysis() {
-            if (els.chatModal.classList.contains('chat-closed')) {
-                toggleChat();
-            }
-            const prompt = "Por favor, faça uma análise geral do meu mês atual baseada nos dados que eu informei.";
-            appendMessage('user', "Faz um resumão do meu mês aí.");
-            await processAIPrompt(prompt);
-        }
-
         function generateContextString() {
             const balance = state.income - (state.card + state.others);
             let context = `DADOS:\n- Renda: R$ ${state.income}\n- Fatura: R$ ${state.card}\n- Outros: R$ ${state.others}\n- Saldo Previsto: R$ ${balance}\n`;
@@ -554,7 +663,6 @@
             if (state.history.length > 0) {
                 context += `- Histórico:\n` + state.history.map(h => `  * [Data: ${h.date}] ${h.desc} - R$ ${h.value} (${h.type === 'card' ? 'Cartão' : 'Pix'})`).join('\n') + '\n';
             }
-            
             if (state.goals.length > 0) {
                 context += `- Metas:\n` + state.goals.map(g => `  * ${g.name}: ${g.current}/${g.target}`).join('\n');
             }
@@ -571,8 +679,9 @@
                 removeMessage(typingId);
                 appendMessage('ai', responseText);
             } catch (error) {
+                console.error("Erro LLM", error);
                 removeMessage(typingId);
-                appendMessage('ai', "Deu erro de conexão aqui. Dá um confere na internet e tenta de novo.");
+                appendMessage('ai', "Mano, minha conexão com o Google deu uma falhada agora. Tenta mandar a mensagem de novo rapidão.");
             }
         }
 
@@ -594,7 +703,6 @@
             }
         }
 
-        // --- FUNÇÕES DE UI DO CHAT ---
         function appendMessage(sender, text) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `flex items-start gap-2 max-w-[85%] msg-anim ${sender === 'user' ? 'self-end flex-row-reverse' : ''} mt-3`;
@@ -606,7 +714,7 @@
 
             msgDiv.innerHTML = `<div class="${bubbleClass}">${formattedText}</div>`;
             els.chatWindow.appendChild(msgDiv);
-            scrollToBottom();
+            els.chatWindow.scrollTo({ top: els.chatWindow.scrollHeight, behavior: 'smooth' });
         }
 
         function appendTypingIndicator() {
@@ -616,7 +724,7 @@
             msgDiv.className = `flex items-start gap-2 max-w-[85%] msg-anim mt-3`;
             msgDiv.innerHTML = `<div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-[24px] rounded-tl-[8px] p-5 text-sm flex gap-1.5 items-center shadow-xl"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
             els.chatWindow.appendChild(msgDiv);
-            scrollToBottom();
+            els.chatWindow.scrollTo({ top: els.chatWindow.scrollHeight, behavior: 'smooth' });
             return id;
         }
 
@@ -625,10 +733,7 @@
             if (el) el.remove();
         }
 
-        function scrollToBottom() {
-            els.chatWindow.scrollTo({ top: els.chatWindow.scrollHeight, behavior: 'smooth' });
-        }
-
+        // Start
         init();
     </script>
 </body>
