@@ -270,16 +270,26 @@
 
     <!-- LÓGICA DO APLICATIVO -->
     <script type="module">
-        // Importações do Firebase SDK via CDN
+        // Importações do Firebase SDK via CDN (Apenas Auth e Firestore, sem Functions)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variáveis Globais de Ambiente
-        let firebaseConfig = {};
-        try { firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}'); } catch(e) {}
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'finance-master-app';
-        const apiKey = ""; 
+        // Variáveis Globais de Ambiente (Suas Credenciais)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBM3hrJnd0QrpZdsyU0aMfkLjtzd0Sxrs8",
+            authDomain: "calendario-7454b.firebaseapp.com",
+            projectId: "calendario-7454b",
+            storageBucket: "calendario-7454b.firebasestorage.app",
+            messagingSenderId: "562176495174",
+            appId: "1:562176495174:web:a5df122b30505a0c860447",
+            measurementId: "G-K58NZGG034"
+        };
+        const appId = 'finance-master-app'; 
+        
+        // --- CHAVE DO GEMINI PARA CHAMADA DIRETA E GRATUITA ---
+        // Cole sua chave gerada no Google AI Studio aqui dentro das aspas
+        const apiKey = "AIzaSyCIG0uKvhrElc8ccUYeoYhpTnbenJ2ILw4"; 
 
         const state = { income: 0, card: 0, others: 0, goals: [], history: [] };
         let currentUser = null;
@@ -681,12 +691,14 @@
             } catch (error) {
                 console.error("Erro LLM", error);
                 removeMessage(typingId);
-                appendMessage('ai', "Mano, minha conexão com o Google deu uma falhada agora. Tenta mandar a mensagem de novo rapidão.");
+                appendMessage('ai', "Mano, deu erro na conexão direta com o Google. Dá um confere na internet ou verifica se a chave da API tá certa.");
             }
         }
 
+        // Voltamos para a chamada direta via Fetch, 100% grátis e sem backend
         async function callGeminiAPI(prompt, systemPrompt) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // Usando o modelo gratuito flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] } };
             const retries = 5, delays = [1000, 2000, 4000, 8000, 16000];
 
