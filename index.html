@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Bibliotecas do Google para o Drive -->
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
 
@@ -24,39 +23,6 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             border-radius: 32px;
         }
-        
-        /* Animações */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px) scale(0.96); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .msg-anim { animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-
-        .typing-dot {
-            width: 6px; height: 6px; background-color: #a1a1aa; border-radius: 50%;
-            display: inline-block; animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-
-        .chat-open { 
-            transform: translateY(0) scale(1); opacity: 1;
-            transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease-out;
-        }
-        .chat-closed { 
-            transform: translateY(100%) scale(0.92); opacity: 0; pointer-events: none;
-            transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease-in;
-        }
-        
-        @keyframes iosGlow {
-            0%, 100% { box-shadow: 0 0 15px 0px rgba(168, 85, 247, 0.3), inset 0 0 10px rgba(255,255,255,0.2); }
-            50% { box-shadow: 0 0 35px 10px rgba(168, 85, 247, 0.6), inset 0 0 10px rgba(255,255,255,0.4); transform: scale(1.02); }
-        }
-        .glow-active { animation: iosGlow 3s infinite ease-in-out; }
 
         @keyframes slideInItem {
             from { opacity: 0; transform: translateX(-15px) scale(0.98); }
@@ -95,7 +61,6 @@
 
     <div class="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 flex flex-col gap-6 pb-32">
         
-        <!-- Header -->
         <header class="flex justify-between items-center border-b border-zinc-800 pb-6 pt-2">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Video<span class="text-purple-500">Master</span></h1>
@@ -103,14 +68,12 @@
             </div>
             
             <div class="flex gap-2">
-                <!-- Botão de Login do Drive -->
-                <button id="btn-drive-auth" onclick="handleAuthClick()" class="glass-panel px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-white/10 transition-colors border-blue-500/30 text-blue-400">
+                <button id="btn-drive-auth" onclick="window.handleAuthClick()" class="glass-panel px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-white/10 transition-colors border-blue-500/30 text-blue-400">
                     <i class="fa-brands fa-google-drive"></i> <span id="drive-status">Conectar Drive</span>
                 </button>
             </div>
         </header>
 
-        <!-- Resumo Financeiro Rápido -->
         <div class="grid grid-cols-2 gap-4">
             <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
                 <span class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">A Receber (Pendentes)</span>
@@ -122,7 +85,6 @@
             </div>
         </div>
 
-        <!-- Formulário de Novo Projeto -->
         <section class="glass-panel p-5 sm:p-6 rounded-2xl shadow-lg">
             <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                 <i class="fa-solid fa-clapperboard text-purple-500"></i> Novo Projeto
@@ -183,7 +145,6 @@
             </form>
         </section>
 
-        <!-- Lista de Projetos (Cards) -->
         <section class="mt-4">
             <h2 class="text-lg font-semibold mb-4 px-2 flex items-center gap-2">
                 <i class="fa-solid fa-layer-group text-purple-500"></i> Seus Projetos
@@ -196,59 +157,50 @@
         </section>
     </div>
 
-    <!-- Barra Flutuante de Chat -->
-    <div id="floating-bar" class="fixed bottom-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-zinc-900/40 backdrop-blur-[32px] border border-white/10 p-2.5 rounded-full z-40 flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-zinc-900/50 cursor-pointer">
-        <button onclick="requestFullAnalysis(event)" class="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center cursor-pointer ml-1 transition-all glow-active border border-white/20 z-50" title="Análise Rápida">
-            <i class="fa-solid fa-bolt text-white"></i>
-        </button>
-        <form id="floating-form" class="flex-1 flex gap-2 pointer-events-none">
-            <input type="text" id="floating-input" placeholder="Pergunte sobre seus projetos..." autocomplete="off" class="flex-1 bg-transparent border-none text-white focus:outline-none px-3 text-[15px] placeholder-zinc-400 !shadow-none !bg-transparent !p-0 pointer-events-auto">
-            <button type="submit" class="w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all transform hover:scale-105 flex-shrink-0 mr-1 pointer-events-auto">
-                <i class="fa-solid fa-arrow-up text-sm pointer-events-none"></i>
-            </button>
-        </form>
-    </div>
-
-    <!-- Modal de Conversa -->
-    <div id="chat-modal" class="fixed inset-0 z-50 bg-[#050507]/80 backdrop-blur-[40px] flex flex-col chat-closed transition-transform duration-300 ease-out">
-        <div class="bg-transparent p-4 flex items-center gap-4 border-b border-white/5 sticky top-0 z-10 pt-safe mt-2">
-            <button onclick="toggleChat()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors backdrop-blur-md">
-                <i class="fa-solid fa-chevron-down"></i>
-            </button>
-            <div class="flex items-center gap-3 flex-1">
-                <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 glow-active border border-white/20">
-                    <i class="fa-solid fa-bolt text-white"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-[16px] tracking-tight text-white">Produtor Executivo</h3>
-                    <p class="text-[11px] text-purple-400 font-bold tracking-widest uppercase opacity-80">Online</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="chat-window" class="flex-1 overflow-y-auto p-4 space-y-5 flex flex-col max-w-3xl mx-auto w-full pb-28">
-            <div class="flex items-start gap-2 max-w-[90%] msg-anim mt-4">
-                <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-3xl rounded-tl-sm p-4 sm:p-5 text-[15px] leading-relaxed text-zinc-200 shadow-xl">
-                    Fala, diretor! Tô de olho nos seus prazos e pagamentos. Só chamar se precisar de um resumo ou quiser saber quem tá atrasado.
-                </div>
-            </div>
-        </div>
-
-        <div class="p-4 bg-transparent absolute bottom-0 left-0 right-0 pb-safe">
-            <form id="modal-form" class="flex items-center gap-3 max-w-3xl mx-auto bg-zinc-900/60 backdrop-blur-3xl border border-white/10 p-2 rounded-full shadow-2xl">
-                <input type="text" id="modal-input" placeholder="Mensagem..." autocomplete="off" class="flex-1 bg-transparent border-none text-white focus:outline-none px-4 text-[15px] !shadow-none !bg-transparent !p-0">
-                <button type="submit" class="w-11 h-11 bg-purple-600 hover:bg-purple-500 rounded-full flex items-center justify-center text-white transition-transform transform hover:scale-105 flex-shrink-0 shadow-lg shadow-purple-500/30">
-                    <i class="fa-solid fa-arrow-up text-sm"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- LÓGICA DO APLICATIVO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- EXPORTANDO FUNÇÕES GLOBAIS PRIMEIRO ---
+        // Isso garante que os botões do HTML vão achar essas funções na hora do clique
+        window.handleAuthClick = function() {
+            if (typeof gapi === 'undefined' || !tokenClient) {
+                alert("Aguarde um momento, os serviços do Google ainda estão carregando...");
+                return;
+            }
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        };
+
+        window.removeProject = async function(id) {
+            if (!currentUser) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()));
+            } catch(error) { console.error(error); }
+        };
+
+        window.changeStatus = async function(id, newStatus) {
+            if (!currentUser) return;
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()), { status: newStatus });
+            } catch(error) { console.error(error); }
+        };
+
+        window.triggerUpload = function(id) {
+            if (!window.gapi || gapi.client.getToken() === null) {
+                alert("Conecte seu Google Drive lá em cima primeiro!");
+                return;
+            }
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'video/*';
+            input.onchange = (e) => uploadToDrive(e.target.files[0], id);
+            input.click();
+        };
 
         // --- CONFIGURAÇÕES ---
         const firebaseConfig = {
@@ -260,17 +212,13 @@
             appId: "1:562176495174:web:a5df122b30505a0c860447"
         };
         const appId = 'video-master-app'; 
-        const geminiApiKey = "AIzaSyCIG0uKvhrElc8ccUYeoYhpTnbenJ2ILw4"; 
 
         // --- GOOGLE DRIVE CONFIG ---
-        // IMPORTANTE: Cole aqui o seu Client ID gerado no Google Cloud Console
         const GOOGLE_CLIENT_ID = "562176495174-kee3hv4p6bc07r8i58qvs7l354v33hm6.apps.googleusercontent.com";
         const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
         let tokenClient;
-        let gapiInited = false;
-        let gisInited = false;
-        let driveMasterFolderId = null; // ID da pasta "Controle de produção"
+        let driveMasterFolderId = null;
 
         const state = { projects: [] };
         let currentUser = null;
@@ -286,55 +234,34 @@
             emptyMsg: document.getElementById('empty-msg'),
             resumoPendente: document.getElementById('resumo-pendente'),
             resumoPago: document.getElementById('resumo-pago'),
-            chatModal: document.getElementById('chat-modal'),
-            floatingBar: document.getElementById('floating-bar'),
-            floatingInput: document.getElementById('floating-input'),
-            modalInput: document.getElementById('modal-input'),
-            chatWindow: document.getElementById('chat-window'),
             btnDrive: document.getElementById('btn-drive-auth'),
             statusDrive: document.getElementById('drive-status')
         };
 
         // --- INICIALIZAÇÃO GOOGLE DRIVE API ---
-        window.onload = function() {
-            gapi.load('client', initializeGapiClient);
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID,
-                scope: SCOPES,
-                callback: (tokenResponse) => {
-                    if (tokenResponse && tokenResponse.access_token) {
-                        els.statusDrive.innerText = "Drive Conectado";
-                        els.btnDrive.classList.add('bg-green-500/20', 'border-green-500/50', 'text-green-400');
-                        els.btnDrive.classList.remove('border-blue-500/30', 'text-blue-400');
-                        checkOrCreateMasterFolder();
-                    }
-                },
-            });
-            gisInited = true;
-        };
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
-                gapiInited = true;
-            } catch (error) {
-                console.error("Erro no GAPI", error);
-            }
-        }
-
-        window.handleAuthClick = function() {
-            if (GOOGLE_CLIENT_ID.includes("SEU_CLIENT_ID")) {
-                alert("Atenção: Você precisa configurar o GOOGLE_CLIENT_ID no código para usar o Drive.");
-                return;
-            }
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
+        function initGoogleApis() {
+            if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+                gapi.load('client', async () => {
+                    await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
+                });
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            els.statusDrive.innerText = "Drive Conectado";
+                            els.btnDrive.classList.add('bg-green-500/20', 'border-green-500/50', 'text-green-400');
+                            els.btnDrive.classList.remove('border-blue-500/30', 'text-blue-400');
+                            checkOrCreateMasterFolder();
+                        }
+                    },
+                });
             } else {
-                tokenClient.requestAccessToken({prompt: ''});
+                setTimeout(initGoogleApis, 100);
             }
         }
+        initGoogleApis();
 
-        // Lógica do Drive: Pasta Mestra
         async function checkOrCreateMasterFolder() {
             try {
                 const response = await gapi.client.drive.files.list({
@@ -351,19 +278,16 @@
                     });
                     driveMasterFolderId = folder.result.id;
                 }
-            } catch (err) {
-                console.error("Erro ao criar pasta mestra", err);
-            }
+            } catch (err) { console.error("Erro ao criar pasta mestra", err); }
         }
 
-        // --- SISTEMA FIREBASE ---
+        // --- SISTEMA FIREBASE (AUTH COM FALLBACK) ---
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     try {
                         await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (tokenError) {
-                        console.warn("Token customizado falhou (comum ao usar Firebase próprio). Fazendo fallback para login anônimo...", tokenError);
+                    } catch (e) {
                         await signInAnonymously(auth);
                     }
                 } else {
@@ -389,12 +313,16 @@
             }, (err) => console.error("Erro Firestore:", err));
         }
 
-        // --- UI E LÓGICA DE NEGÓCIO ---
+        // --- LÓGICA DE NEGÓCIO E UI ---
         document.getElementById('proj-order-date').value = new Date().toISOString().split('T')[0];
 
+        // SUBMIT DO PROJETO (OTIMIZADO)
         els.form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentUser) return;
+            if (!currentUser) {
+                alert("Aguarde, conectando ao banco de dados...");
+                return;
+            }
 
             const name = document.getElementById('proj-name').value;
             const client = document.getElementById('proj-client').value;
@@ -407,62 +335,43 @@
             const payDate = document.getElementById('proj-pay-date').value;
 
             const projId = Date.now().toString();
-            let folderId = null;
+            const newProj = {
+                id: projId, name, client, type, status, orderDate, deadline, value, payment, payDate,
+                driveFolderId: null, timestamp: Date.now()
+            };
 
-            // Cria a pasta no Drive se estiver logado
-            if (gapi.client.getToken() && driveMasterFolderId) {
-                try {
+            // 1. Atualização Otimista na Tela (Rápido!)
+            state.projects.unshift(newProj);
+            updateResumo();
+            renderProjects();
+            
+            els.form.reset();
+            document.getElementById('proj-order-date').value = new Date().toISOString().split('T')[0];
+
+            // 2. Tarefas em Background (Salvar e criar pasta)
+            try {
+                // Salva no banco primeiro
+                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', projId);
+                await setDoc(ref, newProj);
+
+                // Tenta criar no Drive se estiver logado
+                if (window.gapi && gapi.client.getToken() && driveMasterFolderId) {
                     const folderMsg = `${client} - ${name}`;
                     const folder = await gapi.client.drive.files.create({
                         resource: { name: folderMsg, mimeType: 'application/vnd.google-apps.folder', parents: [driveMasterFolderId] },
                         fields: 'id'
                     });
-                    folderId = folder.result.id;
-                } catch (err) { console.error("Erro ao criar pasta do projeto", err); }
-            }
-
-            const newProj = {
-                id: projId, name, client, type, status, orderDate, deadline, value, payment, payDate,
-                driveFolderId: folderId, timestamp: Date.now()
-            };
-
-            els.form.reset();
-            document.getElementById('proj-order-date').value = new Date().toISOString().split('T')[0];
-
-            try {
-                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', projId);
-                await setDoc(ref, newProj);
+                    
+                    newProj.driveFolderId = folder.result.id;
+                    await updateDoc(ref, { driveFolderId: newProj.driveFolderId });
+                    
+                    // Renderiza de novo só pra habilitar o botão de Upload
+                    renderProjects();
+                }
             } catch (error) {
-                console.error(error);
-                appendMessage('ai', "Erro ao salvar no banco. Verifique as regras do Firebase.");
+                console.error("Erro no background ao salvar projeto:", error);
             }
         });
-
-        window.removeProject = async function(id) {
-            if (!currentUser) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()));
-            } catch(error) { console.error(error); }
-        };
-
-        window.changeStatus = async function(id, newStatus) {
-            if (!currentUser) return;
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()), { status: newStatus });
-            } catch(error) { console.error(error); }
-        };
-
-        window.triggerUpload = function(id) {
-            if (!gapi.client.getToken()) {
-                alert("Conecte seu Google Drive lá em cima primeiro!");
-                return;
-            }
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'video/*';
-            input.onchange = (e) => uploadToDrive(e.target.files[0], id);
-            input.click();
-        };
 
         async function uploadToDrive(file, projectId) {
             if (!file) return;
@@ -472,14 +381,12 @@
                 return;
             }
 
-            // UI Feedback
             const btn = document.getElementById(`btn-up-${projectId}`);
             const originalHtml = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-spinner upload-spin"></i> Subindo...`;
             btn.disabled = true;
 
             try {
-                // Lógica de Upload Multipart (Para arquivos médios)
                 const metadata = { name: file.name, parents: [proj.driveFolderId] };
                 const form = new FormData();
                 form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
@@ -538,13 +445,18 @@
 
                 let payColor = proj.payment === "100%" ? "bg-green-500/20 text-green-400" : (proj.payment === "50%" ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400");
 
-                const dateParts = proj.deadline.split('-');
-                const deadBR = `${dateParts[2]}/${dateParts[1]}`;
+                let deadBR = "S/ Data";
+                if (proj.deadline) {
+                    const dateParts = proj.deadline.split('-');
+                    if (dateParts.length === 3) {
+                        deadBR = `${dateParts[2]}/${dateParts[1]}`;
+                    }
+                }
 
                 const el = document.createElement('div');
                 el.className = 'bg-white/5 border border-white/10 p-5 rounded-3xl relative group item-enter hover:bg-white/10 transition-colors shadow-sm flex flex-col gap-3';
                 el.innerHTML = `
-                    <button onclick="window.removeProject('${proj.id}')" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <button onclick="window.removeProject('${proj.id}')" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 z-10">
                         <i class="fa-solid fa-trash text-xs"></i>
                     </button>
                     
@@ -576,7 +488,7 @@
                             <option value="Revisão" ${proj.status==='Revisão'?'selected':''}>Revisão</option>
                             <option value="Finalizado" ${proj.status==='Finalizado'?'selected':''}>Finalizado</option>
                         </select>
-                        <button id="btn-up-${proj.id}" onclick="window.triggerUpload('${proj.id}')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 rounded-xl flex items-center gap-2 transition-colors ${proj.driveFolderId ? '' : 'opacity-50 cursor-not-allowed'}" ${proj.driveFolderId ? '' : 'title="Sem pasta no Drive"'}>
+                        <button id="btn-up-${proj.id}" onclick="window.triggerUpload('${proj.id}')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 rounded-xl flex items-center gap-2 transition-colors ${proj.driveFolderId ? '' : 'opacity-50 cursor-not-allowed'}" ${proj.driveFolderId ? '' : 'title="Sem pasta no Drive. Crie um projeto com o Drive conectado!"'}>
                             <i class="fa-brands fa-google-drive"></i> Vídeo
                         </button>
                     </div>
@@ -584,93 +496,6 @@
                 els.list.appendChild(el);
             });
         }
-
-        // --- SISTEMA DE IA E CHAT ---
-        els.floatingBar.addEventListener('click', () => { if (els.chatModal.classList.contains('chat-closed')) toggleChat(); });
-        document.getElementById('floating-form').addEventListener('submit', (e) => handleChatSubmit(e, els.floatingInput));
-        document.getElementById('modal-form').addEventListener('submit', (e) => handleChatSubmit(e, els.modalInput));
-
-        window.toggleChat = function() {
-            const isClosed = els.chatModal.classList.contains('chat-closed');
-            if (isClosed) {
-                els.chatModal.classList.remove('chat-closed'); els.chatModal.classList.add('chat-open');
-                els.floatingBar.style.opacity = '0'; els.floatingBar.style.pointerEvents = 'none';
-                document.body.classList.add('no-scroll'); 
-                if (els.floatingInput.value) { els.modalInput.value = els.floatingInput.value; els.floatingInput.value = ''; }
-                setTimeout(() => els.modalInput.focus(), 300);
-            } else {
-                els.chatModal.classList.remove('chat-open'); els.chatModal.classList.add('chat-closed');
-                els.floatingBar.style.opacity = '1'; els.floatingBar.style.pointerEvents = 'auto';
-                document.body.classList.remove('no-scroll');
-            }
-        };
-
-        window.requestFullAnalysis = async function(e) {
-            if (e) e.stopPropagation();
-            if (els.chatModal.classList.contains('chat-closed')) toggleChat();
-            appendMessage('user', "Me passa um relatório da produtora.");
-            await processAIPrompt("Por favor, faça uma análise dos meus projetos, pagamentos pendentes e deadlines.");
-        };
-
-        async function handleChatSubmit(e, inputEl) {
-            e.preventDefault();
-            const text = inputEl.value.trim();
-            if (els.chatModal.classList.contains('chat-closed')) { toggleChat(); if (!text) return; } else if (!text) return;
-            els.floatingInput.value = ''; els.modalInput.value = '';
-            appendMessage('user', text);
-            await processAIPrompt(text);
-        }
-
-        function generateContextString() {
-            let context = `DADOS DA PRODUTORA DE VÍDEOS:\n`;
-            if (state.projects.length > 0) {
-                state.projects.forEach(p => {
-                    context += `- Projeto: ${p.name} | Cliente: ${p.client} | Status: ${p.status} | Deadline: ${p.deadline} | Valor: R$ ${p.value} | Pagamento: ${p.payment}\n`;
-                });
-            } else { context += "Nenhum projeto no momento."; }
-            return context;
-        }
-
-        async function processAIPrompt(userMessage) {
-            const typingId = appendTypingIndicator();
-            const fullPrompt = `${generateContextString()}\n\nO usuário diz: "${userMessage}"`;
-            const systemPrompt = `Você é um Produtor Executivo e parceiro da produtora de vídeos do usuário. Analise os deadlines (prazos), status das edições e valores pendentes. Fale de forma direta, linguagem de audiovisual (render, captação, job). Seja conciso.`;
-
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
-                const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] } }) });
-                if (!res.ok) throw new Error();
-                const result = await res.json();
-                removeMessage(typingId);
-                appendMessage('ai', result.candidates[0].content.parts[0].text);
-            } catch (error) {
-                removeMessage(typingId);
-                appendMessage('ai', "Erro no servidor da IA. Tenta de novo.");
-            }
-        }
-
-        function appendMessage(sender, text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `flex items-start gap-2 max-w-[85%] msg-anim ${sender === 'user' ? 'self-end flex-row-reverse' : ''} mt-3`;
-            const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-            const bubbleClass = sender === 'user' ? 'bg-purple-600 text-white rounded-[24px] rounded-br-[8px] p-4 sm:p-5 text-[15px] shadow-lg shadow-purple-900/20' : 'bg-white/10 backdrop-blur-md border border-white/10 rounded-[24px] rounded-tl-[8px] p-4 sm:p-5 text-[15px] text-zinc-200 shadow-xl';
-            msgDiv.innerHTML = `<div class="${bubbleClass}">${formattedText}</div>`;
-            els.chatWindow.appendChild(msgDiv);
-            els.chatWindow.scrollTo({ top: els.chatWindow.scrollHeight, behavior: 'smooth' });
-        }
-
-        function appendTypingIndicator() {
-            const id = 'typing-' + Date.now();
-            const msgDiv = document.createElement('div');
-            msgDiv.id = id;
-            msgDiv.className = `flex items-start gap-2 max-w-[85%] msg-anim mt-3`;
-            msgDiv.innerHTML = `<div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-[24px] rounded-tl-[8px] p-5 text-sm flex gap-1.5 items-center shadow-xl"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-            els.chatWindow.appendChild(msgDiv);
-            els.chatWindow.scrollTo({ top: els.chatWindow.scrollHeight, behavior: 'smooth' });
-            return id;
-        }
-
-        function removeMessage(id) { const el = document.getElementById(id); if (el) el.remove(); }
     </script>
 </body>
 </html>
