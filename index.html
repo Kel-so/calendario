@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -55,11 +55,16 @@
         /* Upload status loader */
         .upload-spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        /* Customizando a barra de rolagem horizontal da tabela */
+        .table-container::-webkit-scrollbar { height: 8px; }
+        .table-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 8px; }
+        .table-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 8px; }
     </style>
 </head>
 <body class="bg-[#050507] bg-gradient-to-br from-[#09090b] to-[#18181b] text-zinc-100 font-sans min-h-screen flex flex-col selection:bg-purple-500/30">
 
-    <div class="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 flex flex-col gap-6 pb-32">
+    <div class="max-w-6xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 flex flex-col gap-6 pb-32">
         
         <header class="flex justify-between items-center border-b border-zinc-800 pb-6 pt-2">
             <div>
@@ -145,14 +150,32 @@
             </form>
         </section>
 
-        <section class="mt-4">
-            <h2 class="text-lg font-semibold mb-4 px-2 flex items-center gap-2">
-                <i class="fa-solid fa-layer-group text-purple-500"></i> Seus Projetos
+        <!-- Tabela de Projetos -->
+        <section class="mt-4 glass-panel p-5 sm:p-6 rounded-2xl shadow-lg overflow-hidden">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-table-list text-purple-500"></i> Controle de Produção
             </h2>
-            <div id="projects-list" class="flex flex-col gap-4">
-                <div class="text-center text-zinc-500 py-8 text-sm glass-panel rounded-2xl" id="empty-msg">
-                    Nenhum projeto em andamento.
-                </div>
+            <div class="overflow-x-auto table-container pb-2">
+                <table class="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
+                    <thead>
+                        <tr class="border-b border-white/10 text-[10px] uppercase text-zinc-500 tracking-wider">
+                            <th class="p-3 font-medium">Status</th>
+                            <th class="p-3 font-medium">Nome do Projeto</th>
+                            <th class="p-3 font-medium">Tipo</th>
+                            <th class="p-3 font-medium">Cliente</th>
+                            <th class="p-3 font-medium">Pedido</th>
+                            <th class="p-3 font-medium">Deadline</th>
+                            <th class="p-3 font-medium">Valor</th>
+                            <th class="p-3 font-medium text-center">Pagamento</th>
+                            <th class="p-3 font-medium">Data Pag.</th>
+                            <th class="p-3 font-medium text-center">Drive</th>
+                            <th class="p-3 font-medium text-right">Excluir</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projects-list">
+                        <!-- Linhas serão inseridas aqui via JS -->
+                    </tbody>
+                </table>
             </div>
         </section>
     </div>
@@ -163,7 +186,6 @@
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- EXPORTANDO FUNÇÕES GLOBAIS PRIMEIRO ---
-        // Isso garante que os botões do HTML vão achar essas funções na hora do clique
         window.handleAuthClick = function() {
             if (typeof gapi === 'undefined' || !tokenClient) {
                 alert("Aguarde um momento, os serviços do Google ainda estão carregando...");
@@ -178,6 +200,7 @@
 
         window.removeProject = async function(id) {
             if (!currentUser) return;
+            if(!confirm("Tem certeza que deseja excluir este projeto?")) return;
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()));
             } catch(error) { console.error(error); }
@@ -187,6 +210,13 @@
             if (!currentUser) return;
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()), { status: newStatus });
+            } catch(error) { console.error(error); }
+        };
+
+        window.changePayment = async function(id, newPayment) {
+            if (!currentUser) return;
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()), { payment: newPayment });
             } catch(error) { console.error(error); }
         };
 
@@ -231,7 +261,6 @@
         const els = {
             form: document.getElementById('project-form'),
             list: document.getElementById('projects-list'),
-            emptyMsg: document.getElementById('empty-msg'),
             resumoPendente: document.getElementById('resumo-pendente'),
             resumoPago: document.getElementById('resumo-pago'),
             btnDrive: document.getElementById('btn-drive-auth'),
@@ -365,7 +394,7 @@
                     newProj.driveFolderId = folder.result.id;
                     await updateDoc(ref, { driveFolderId: newProj.driveFolderId });
                     
-                    // Renderiza de novo só pra habilitar o botão de Upload
+                    // Renderiza de novo só pra habilitar o botão de Upload/Link
                     renderProjects();
                 }
             } catch (error) {
@@ -383,7 +412,7 @@
 
             const btn = document.getElementById(`btn-up-${projectId}`);
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<i class="fa-solid fa-spinner upload-spin"></i> Subindo...`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner upload-spin"></i>`;
             btn.disabled = true;
 
             try {
@@ -399,20 +428,27 @@
                 });
 
                 if(res.ok) {
-                    btn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> Sucesso!`;
+                    btn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i>`;
                     setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 3000);
                 } else {
                     throw new Error("Upload falhou");
                 }
             } catch (err) {
                 console.error(err);
-                btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> Erro`;
+                btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i>`;
                 setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 3000);
             }
         }
 
         function formatCurrency(value) {
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+        
+        function formatDateBR(dateString) {
+            if (!dateString) return '-';
+            const parts = dateString.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateString;
         }
 
         function updateResumo() {
@@ -428,13 +464,10 @@
 
         function renderProjects() {
             if (state.projects.length === 0) {
-                els.emptyMsg.style.display = 'block';
-                els.list.innerHTML = '';
-                els.list.appendChild(els.emptyMsg);
+                els.list.innerHTML = `<tr><td colspan="11" class="text-center text-zinc-500 py-8 text-sm">Nenhum projeto em andamento.</td></tr>`;
                 return;
             }
 
-            els.emptyMsg.style.display = 'none';
             els.list.innerHTML = '';
 
             state.projects.forEach(proj => {
@@ -445,55 +478,53 @@
 
                 let payColor = proj.payment === "100%" ? "bg-green-500/20 text-green-400" : (proj.payment === "50%" ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400");
 
-                let deadBR = "S/ Data";
-                if (proj.deadline) {
-                    const dateParts = proj.deadline.split('-');
-                    if (dateParts.length === 3) {
-                        deadBR = `${dateParts[2]}/${dateParts[1]}`;
-                    }
+                let driveContent = `<span class="text-xs text-zinc-600 italic">S/ Pasta</span>`;
+                if (proj.driveFolderId) {
+                    driveContent = `
+                        <div class="flex items-center justify-center gap-3">
+                            <a href="https://drive.google.com/drive/folders/${proj.driveFolderId}" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors transform hover:scale-110" title="Abrir pasta no Drive">
+                                <i class="fa-solid fa-folder-open text-lg"></i>
+                            </a>
+                            <button id="btn-up-${proj.id}" onclick="window.triggerUpload('${proj.id}')" class="text-purple-400 hover:text-purple-300 transition-colors transform hover:scale-110" title="Fazer Upload do Vídeo">
+                                <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                            </button>
+                        </div>
+                    `;
                 }
 
-                const el = document.createElement('div');
-                el.className = 'bg-white/5 border border-white/10 p-5 rounded-3xl relative group item-enter hover:bg-white/10 transition-colors shadow-sm flex flex-col gap-3';
-                el.innerHTML = `
-                    <button onclick="window.removeProject('${proj.id}')" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 z-10">
-                        <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
-                    
-                    <div class="flex justify-between items-start pr-8">
-                        <div>
-                            <h3 class="font-bold text-lg text-zinc-100">${proj.name}</h3>
-                            <p class="text-xs text-zinc-400 font-medium uppercase tracking-wider">${proj.client} • ${proj.type}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-[10px] uppercase text-zinc-500 block">Deadline</span>
-                            <span class="font-bold text-red-400">${deadBR}</span>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center bg-black/20 p-3 rounded-2xl border border-white/5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold ${statusColor}"><i class="fa-solid fa-circle text-[8px] mr-1 mb-0.5"></i>${proj.status}</span>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="font-bold text-zinc-100">${formatCurrency(proj.value)}</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-md mt-1 ${payColor} font-bold">${proj.payment}</span>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2 mt-1">
-                        <select onchange="window.changeStatus('${proj.id}', this.value)" class="flex-1 bg-black/30 border-none text-xs! p-2! rounded-xl focus:ring-0">
-                            <option value="Captação" ${proj.status==='Captação'?'selected':''}>Captação</option>
-                            <option value="Edição" ${proj.status==='Edição'?'selected':''}>Edição</option>
-                            <option value="Revisão" ${proj.status==='Revisão'?'selected':''}>Revisão</option>
-                            <option value="Finalizado" ${proj.status==='Finalizado'?'selected':''}>Finalizado</option>
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-white/5 hover:bg-white/5 transition-colors item-enter text-[13px]';
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <select onchange="window.changeStatus('${proj.id}', this.value)" class="bg-black/30 border border-white/10 text-xs p-1.5 rounded-lg focus:ring-0 ${statusColor} font-bold">
+                            <option value="Captação" ${proj.status==='Captação'?'selected':''}>🎥 Captação</option>
+                            <option value="Edição" ${proj.status==='Edição'?'selected':''}>💻 Edição</option>
+                            <option value="Revisão" ${proj.status==='Revisão'?'selected':''}>👀 Revisão</option>
+                            <option value="Finalizado" ${proj.status==='Finalizado'?'selected':''}>✅ Finalizado</option>
                         </select>
-                        <button id="btn-up-${proj.id}" onclick="window.triggerUpload('${proj.id}')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 rounded-xl flex items-center gap-2 transition-colors ${proj.driveFolderId ? '' : 'opacity-50 cursor-not-allowed'}" ${proj.driveFolderId ? '' : 'title="Sem pasta no Drive. Crie um projeto com o Drive conectado!"'}>
-                            <i class="fa-brands fa-google-drive"></i> Vídeo
+                    </td>
+                    <td class="p-3 font-semibold text-zinc-100 max-w-[150px] truncate" title="${proj.name}">${proj.name}</td>
+                    <td class="p-3 text-zinc-400">${proj.type}</td>
+                    <td class="p-3 text-zinc-400 max-w-[120px] truncate" title="${proj.client}">${proj.client}</td>
+                    <td class="p-3 text-zinc-400">${formatDateBR(proj.orderDate)}</td>
+                    <td class="p-3 font-bold text-red-400">${formatDateBR(proj.deadline)}</td>
+                    <td class="p-3 font-bold text-zinc-100">${formatCurrency(proj.value)}</td>
+                    <td class="p-3 text-center">
+                        <select onchange="window.changePayment('${proj.id}', this.value)" class="bg-black/30 border border-white/10 text-xs p-1.5 rounded-lg focus:ring-0 ${payColor} font-bold text-center appearance-none cursor-pointer">
+                            <option value="Pendente" ${proj.payment==='Pendente'?'selected':''} class="text-orange-400 bg-zinc-900">Pendente</option>
+                            <option value="50%" ${proj.payment==='50%'?'selected':''} class="text-blue-400 bg-zinc-900">50% Pago</option>
+                            <option value="100%" ${proj.payment==='100%'?'selected':''} class="text-green-400 bg-zinc-900">100% Pago</option>
+                        </select>
+                    </td>
+                    <td class="p-3 text-zinc-400">${formatDateBR(proj.payDate)}</td>
+                    <td class="p-3 text-center align-middle">${driveContent}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="window.removeProject('${proj.id}')" class="text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 w-8 h-8 rounded-full bg-black/20 flex items-center justify-center ml-auto">
+                            <i class="fa-solid fa-trash text-xs"></i>
                         </button>
-                    </div>
+                    </td>
                 `;
-                els.list.appendChild(el);
+                els.list.appendChild(tr);
             });
         }
     </script>
