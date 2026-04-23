@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finance Master - IA Dashboard</title>
+    <title>Video Master - Produção</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Bibliotecas do Google para o Drive -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+
     <style>
-        /* Customizando a scrollbar para ficar com visual de app nativo */
-        ::-webkit-scrollbar { width: 0px; } /* Ocultar scrollbar para visual mais limpo no iOS */
+        /* Customizando a scrollbar */
+        ::-webkit-scrollbar { width: 0px; } 
         
         /* Efeito glassmorphism iOS 26 */
         .glass-panel {
@@ -20,22 +25,16 @@
             border-radius: 32px;
         }
         
-        /* Animação para mensagens do chat */
+        /* Animações */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(12px) scale(0.96); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .msg-anim {
-            animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-        }
+        .msg-anim { animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
-        /* Indicador de digitando da IA */
         .typing-dot {
-            width: 6px; height: 6px;
-            background-color: #a1a1aa;
-            border-radius: 50%;
-            display: inline-block;
-            animation: bounce 1.4s infinite ease-in-out both;
+            width: 6px; height: 6px; background-color: #a1a1aa; border-radius: 50%;
+            display: inline-block; animation: bounce 1.4s infinite ease-in-out both;
         }
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
@@ -44,224 +43,201 @@
             40% { transform: scale(1); opacity: 1; }
         }
 
-        /* Animação Modal iOS 26 (Spring Dynamics) */
         .chat-open { 
-            transform: translateY(0) scale(1); 
-            opacity: 1;
+            transform: translateY(0) scale(1); opacity: 1;
             transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease-out;
         }
         .chat-closed { 
-            transform: translateY(100%) scale(0.92); 
-            opacity: 0;
-            pointer-events: none;
+            transform: translateY(100%) scale(0.92); opacity: 0; pointer-events: none;
             transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease-in;
         }
         
-        /* Efeito Glow Pulsante do Ícone */
         @keyframes iosGlow {
-            0%, 100% { box-shadow: 0 0 15px 0px rgba(59, 130, 246, 0.3), inset 0 0 10px rgba(255,255,255,0.2); }
-            50% { box-shadow: 0 0 35px 10px rgba(59, 130, 246, 0.6), inset 0 0 10px rgba(255,255,255,0.4); transform: scale(1.02); }
+            0%, 100% { box-shadow: 0 0 15px 0px rgba(168, 85, 247, 0.3), inset 0 0 10px rgba(255,255,255,0.2); }
+            50% { box-shadow: 0 0 35px 10px rgba(168, 85, 247, 0.6), inset 0 0 10px rgba(255,255,255,0.4); transform: scale(1.02); }
         }
-        .glow-active {
-            animation: iosGlow 3s infinite ease-in-out;
-        }
+        .glow-active { animation: iosGlow 3s infinite ease-in-out; }
 
-        /* Entrada suave de itens (Histórico/Metas) */
         @keyframes slideInItem {
             from { opacity: 0; transform: translateX(-15px) scale(0.98); }
             to { opacity: 1; transform: translateX(0) scale(1); }
         }
-        .item-enter {
-            animation: slideInItem 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-        }
+        .item-enter { animation: slideInItem 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
-        /* Overrides Globais de Input para visual iOS */
+        /* Inputs Premium */
         input[type="text"], input[type="number"], input[type="date"], select {
             background-color: rgba(255, 255, 255, 0.04) !important;
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
             border-radius: 18px !important;
             padding: 14px 18px !important;
             font-size: 15px !important;
+            color: white !important;
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
             transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
         }
         input:focus, select:focus {
             background-color: rgba(255, 255, 255, 0.08) !important;
-            border-color: rgba(59, 130, 246, 0.6) !important;
+            border-color: rgba(168, 85, 247, 0.6) !important;
             transform: scale(1.01);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), inset 0 2px 10px rgba(0,0,0,0.1) !important;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15), inset 0 2px 10px rgba(0,0,0,0.1) !important;
         }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
 
-        /* Evitar scroll no body quando modal estiver aberto */
         .no-scroll { overflow: hidden; }
+        
+        /* Upload status loader */
+        .upload-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-[#050507] bg-gradient-to-br from-[#09090b] to-[#18181b] text-zinc-100 font-sans min-h-screen flex flex-col selection:bg-blue-500/30">
+<body class="bg-[#050507] bg-gradient-to-br from-[#09090b] to-[#18181b] text-zinc-100 font-sans min-h-screen flex flex-col selection:bg-purple-500/30">
 
-    <!-- Container Principal Centralizado -->
-    <div class="max-w-3xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 flex flex-col gap-6 pb-32">
+    <div class="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 flex flex-col gap-6 pb-32">
         
         <!-- Header -->
         <header class="flex justify-between items-center border-b border-zinc-800 pb-6 pt-2">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Finance<span class="text-blue-500">Master</span></h1>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Video<span class="text-purple-500">Master</span></h1>
+                <p class="text-xs text-zinc-500 mt-1">Gestão de Produção & Drive</p>
             </div>
             
-            <div class="glass-panel px-4 py-2 rounded-xl text-right">
-                <span class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Saldo Livre</span>
-                <div id="header-balance" class="text-lg sm:text-xl font-bold text-green-400">R$ 0,00</div>
+            <div class="flex gap-2">
+                <!-- Botão de Login do Drive -->
+                <button id="btn-drive-auth" onclick="handleAuthClick()" class="glass-panel px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-white/10 transition-colors border-blue-500/30 text-blue-400">
+                    <i class="fa-brands fa-google-drive"></i> <span id="drive-status">Conectar Drive</span>
+                </button>
             </div>
         </header>
 
-        <!-- Fluxo de Caixa Mensal -->
+        <!-- Resumo Financeiro Rápido -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                <span class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">A Receber (Pendentes)</span>
+                <div id="resumo-pendente" class="text-xl font-bold text-orange-400">R$ 0,00</div>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                <span class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Faturado (Pagos)</span>
+                <div id="resumo-pago" class="text-xl font-bold text-green-400">R$ 0,00</div>
+            </div>
+        </div>
+
+        <!-- Formulário de Novo Projeto -->
         <section class="glass-panel p-5 sm:p-6 rounded-2xl shadow-lg">
             <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-wallet text-blue-500"></i> Meu Mês
+                <i class="fa-solid fa-clapperboard text-purple-500"></i> Novo Projeto
             </h2>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="space-y-2">
-                    <label class="text-sm text-zinc-400">Renda Mensal (R$)</label>
-                    <input type="number" id="input-income" value="0" min="0" step="100"
-                        class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+
+            <form id="project-form" class="flex flex-col gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <input type="text" id="proj-name" placeholder="Nome do Projeto (Ex: Casamento João)" required class="w-full">
+                    <input type="text" id="proj-client" placeholder="Cliente" required class="w-full">
                 </div>
                 
-                <div class="space-y-2">
-                    <label class="text-sm text-zinc-400">Fatura Cartão (R$)</label>
-                    <input type="number" id="input-card" value="0" min="0" step="50"
-                        class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors">
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-sm text-zinc-400">Pix/Outros (R$)</label>
-                    <input type="number" id="input-others" value="0" min="0" step="50"
-                        class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors">
-                </div>
-            </div>
-
-            <div class="mt-6">
-                <div class="flex justify-between text-sm mb-2">
-                    <span class="text-zinc-400">Comprometimento</span>
-                    <span id="expense-percentage" class="font-bold text-white">0%</span>
-                </div>
-                <div class="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden flex">
-                    <div id="bar-card" class="bg-purple-500 h-full transition-all duration-500" style="width: 0%"></div>
-                    <div id="bar-others" class="bg-orange-500 h-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Histórico de Lançamentos -->
-        <section class="glass-panel p-5 sm:p-6 rounded-2xl shadow-lg">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-clock-rotate-left text-purple-500"></i> Histórico
-            </h2>
-
-            <form id="trans-form" class="flex flex-col sm:flex-row gap-3 mb-6">
-                <input type="text" id="trans-desc" placeholder="Ex: Hambúrguer" required
-                    class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500">
-                <div class="flex gap-3">
-                    <input type="number" id="trans-value" placeholder="R$" required min="0.01" step="0.01"
-                        class="w-1/3 sm:w-24 bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500">
-                    <select id="trans-type" class="w-1/3 sm:w-32 bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500">
-                        <option value="card">Cartão</option>
-                        <option value="others">Pix/Outros</option>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <select id="proj-type" required class="w-full">
+                        <option value="" disabled selected>Tipo</option>
+                        <option value="Reels/TikTok">Reels/TikTok</option>
+                        <option value="YouTube">YouTube</option>
+                        <option value="Institucional">Institucional</option>
+                        <option value="Casamento">Casamento</option>
+                        <option value="Outro">Outro</option>
                     </select>
-                    <input type="date" id="trans-date" required
-                        class="w-1/3 sm:w-36 bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500 [&::-webkit-calendar-picker-indicator]:invert">
+                    
+                    <select id="proj-status" required class="w-full">
+                        <option value="Captação">🎥 Captação</option>
+                        <option value="Edição">💻 Edição</option>
+                        <option value="Revisão">👀 Revisão</option>
+                        <option value="Finalizado">✅ Finalizado</option>
+                    </select>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-zinc-500 uppercase ml-2">Pedido</label>
+                        <input type="date" id="proj-order-date" required class="w-full text-sm p-3!">
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-zinc-500 uppercase ml-2">Deadline</label>
+                        <input type="date" id="proj-deadline" required class="w-full text-sm p-3!">
+                    </div>
                 </div>
-                <button type="submit" class="bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600 px-4 py-3 rounded-lg transition-colors">
-                    <i class="fa-solid fa-plus"></i>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <input type="number" id="proj-value" placeholder="Valor Total (R$)" required min="0" step="0.01" class="w-full">
+                    
+                    <select id="proj-payment" required class="w-full">
+                        <option value="Pendente">Pagamento: Pendente</option>
+                        <option value="50%">Pagamento: 50% Pago</option>
+                        <option value="100%">Pagamento: 100% Pago</option>
+                    </select>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-zinc-500 uppercase ml-2">Data do Pagamento</label>
+                        <input type="date" id="proj-pay-date" class="w-full text-sm p-3!">
+                    </div>
+                </div>
+
+                <button type="submit" class="mt-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-purple-600/20">
+                    <i class="fa-solid fa-plus mr-2"></i> Criar Projeto & Pasta no Drive
                 </button>
             </form>
-
-            <div id="history-list" class="space-y-3 max-h-48 overflow-y-auto pr-2">
-                <div class="text-center text-zinc-500 py-4 text-sm" id="empty-history-msg">
-                    Nenhum gasto registrado.
-                </div>
-            </div>
         </section>
 
-        <!-- Metas Financeiras -->
-        <section class="glass-panel p-5 sm:p-6 rounded-2xl shadow-lg">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-bullseye text-green-500"></i> Metas
+        <!-- Lista de Projetos (Cards) -->
+        <section class="mt-4">
+            <h2 class="text-lg font-semibold mb-4 px-2 flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-purple-500"></i> Seus Projetos
             </h2>
-
-            <form id="goal-form" class="flex flex-col sm:flex-row gap-3 mb-6">
-                <input type="text" id="goal-name" placeholder="Nome (Ex: Reserva)" required
-                    class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-green-500">
-                <div class="flex gap-3">
-                    <input type="number" id="goal-target" placeholder="Alvo (R$)" required min="1"
-                        class="w-1/2 sm:w-28 bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-green-500">
-                    <input type="number" id="goal-current" placeholder="Atual (R$)" required min="0"
-                        class="w-1/2 sm:w-28 bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-green-500">
-                </div>
-                <button type="submit" class="bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600 px-4 py-3 rounded-lg transition-colors">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
-            </form>
-
-            <div id="goals-list" class="space-y-4">
-                <div class="text-center text-zinc-500 py-4 text-sm" id="empty-goals-msg">
-                    Nenhuma meta cadastrada ainda.
+            <div id="projects-list" class="flex flex-col gap-4">
+                <div class="text-center text-zinc-500 py-8 text-sm glass-panel rounded-2xl" id="empty-msg">
+                    Nenhum projeto em andamento.
                 </div>
             </div>
         </section>
     </div>
 
-    <!-- Barra Flutuante de Chat (Fica fixa na tela principal) -->
+    <!-- Barra Flutuante de Chat -->
     <div id="floating-bar" class="fixed bottom-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-zinc-900/40 backdrop-blur-[32px] border border-white/10 p-2.5 rounded-full z-40 flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-zinc-900/50 cursor-pointer">
-        <!-- Ícone para abrir análise rápida -->
-        <button onclick="requestFullAnalysis(event)" class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center cursor-pointer ml-1 transition-all glow-active border border-white/20 z-50" title="Análise Rápida">
-            <svg class="w-5 h-5 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-            </svg>
+        <button onclick="requestFullAnalysis(event)" class="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center cursor-pointer ml-1 transition-all glow-active border border-white/20 z-50" title="Análise Rápida">
+            <i class="fa-solid fa-bolt text-white"></i>
         </button>
-        <!-- Input Fake para acionar o chat real -->
         <form id="floating-form" class="flex-1 flex gap-2 pointer-events-none">
-            <input type="text" id="floating-input" placeholder="Pergunte ao Assistente..." autocomplete="off" class="flex-1 bg-transparent border-none text-white focus:outline-none px-3 text-[15px] placeholder-zinc-400 !shadow-none !bg-transparent !p-0 pointer-events-auto">
+            <input type="text" id="floating-input" placeholder="Pergunte sobre seus projetos..." autocomplete="off" class="flex-1 bg-transparent border-none text-white focus:outline-none px-3 text-[15px] placeholder-zinc-400 !shadow-none !bg-transparent !p-0 pointer-events-auto">
             <button type="submit" class="w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all transform hover:scale-105 flex-shrink-0 mr-1 pointer-events-auto">
                 <i class="fa-solid fa-arrow-up text-sm pointer-events-none"></i>
             </button>
         </form>
     </div>
 
-    <!-- Modal de Conversa (Página inteira que sobe) -->
+    <!-- Modal de Conversa -->
     <div id="chat-modal" class="fixed inset-0 z-50 bg-[#050507]/80 backdrop-blur-[40px] flex flex-col chat-closed transition-transform duration-300 ease-out">
-        
-        <!-- Cabeçalho do Chat -->
         <div class="bg-transparent p-4 flex items-center gap-4 border-b border-white/5 sticky top-0 z-10 pt-safe mt-2">
             <button onclick="toggleChat()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors backdrop-blur-md">
                 <i class="fa-solid fa-chevron-down"></i>
             </button>
             <div class="flex items-center gap-3 flex-1">
-                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 glow-active border border-white/20">
-                    <svg class="w-5 h-5 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
+                <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 glow-active border border-white/20">
+                    <i class="fa-solid fa-bolt text-white"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-[16px] tracking-tight text-white">Assistente</h3>
-                    <p class="text-[11px] text-blue-400 font-bold tracking-widest uppercase opacity-80">Online</p>
+                    <h3 class="font-bold text-[16px] tracking-tight text-white">Produtor Executivo</h3>
+                    <p class="text-[11px] text-purple-400 font-bold tracking-widest uppercase opacity-80">Online</p>
                 </div>
             </div>
         </div>
 
-        <!-- Área de Mensagens -->
         <div id="chat-window" class="flex-1 overflow-y-auto p-4 space-y-5 flex flex-col max-w-3xl mx-auto w-full pb-28">
             <div class="flex items-start gap-2 max-w-[90%] msg-anim mt-4">
                 <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-3xl rounded-tl-sm p-4 sm:p-5 text-[15px] leading-relaxed text-zinc-200 shadow-xl">
-                    E aí! Manda bala. O que quer saber sobre suas finanças? Pode clicar na estrela mágica ali embaixo se quiser um resumão do mês.
+                    Fala, diretor! Tô de olho nos seus prazos e pagamentos. Só chamar se precisar de um resumo ou quiser saber quem tá atrasado.
                 </div>
             </div>
         </div>
 
-        <!-- Input do Chat -->
         <div class="p-4 bg-transparent absolute bottom-0 left-0 right-0 pb-safe">
             <form id="modal-form" class="flex items-center gap-3 max-w-3xl mx-auto bg-zinc-900/60 backdrop-blur-3xl border border-white/10 p-2 rounded-full shadow-2xl">
                 <input type="text" id="modal-input" placeholder="Mensagem..." autocomplete="off" class="flex-1 bg-transparent border-none text-white focus:outline-none px-4 text-[15px] !shadow-none !bg-transparent !p-0">
-                <button type="submit" class="w-11 h-11 bg-blue-600 hover:bg-blue-500 rounded-full flex items-center justify-center text-white transition-transform transform hover:scale-105 flex-shrink-0 shadow-lg shadow-blue-500/30">
+                <button type="submit" class="w-11 h-11 bg-purple-600 hover:bg-purple-500 rounded-full flex items-center justify-center text-white transition-transform transform hover:scale-105 flex-shrink-0 shadow-lg shadow-purple-500/30">
                     <i class="fa-solid fa-arrow-up text-sm"></i>
                 </button>
             </form>
@@ -270,28 +246,33 @@
 
     <!-- LÓGICA DO APLICATIVO -->
     <script type="module">
-        // Importações do Firebase SDK via CDN (Apenas Auth e Firestore, sem Functions)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variáveis Globais de Ambiente (Suas Credenciais)
+        // --- CONFIGURAÇÕES ---
         const firebaseConfig = {
             apiKey: "AIzaSyBM3hrJnd0QrpZdsyU0aMfkLjtzd0Sxrs8",
             authDomain: "calendario-7454b.firebaseapp.com",
             projectId: "calendario-7454b",
             storageBucket: "calendario-7454b.firebasestorage.app",
             messagingSenderId: "562176495174",
-            appId: "1:562176495174:web:a5df122b30505a0c860447",
-            measurementId: "G-K58NZGG034"
+            appId: "1:562176495174:web:a5df122b30505a0c860447"
         };
-        const appId = 'finance-master-app'; 
-        
-        // --- CHAVE DO GEMINI PARA CHAMADA DIRETA E GRATUITA ---
-        // Cole sua chave gerada no Google AI Studio aqui dentro das aspas
-        const apiKey = ""; 
+        const appId = 'video-master-app'; 
+        const geminiApiKey = "AIzaSyCIG0uKvhrElc8ccUYeoYhpTnbenJ2ILw4"; 
 
-        const state = { income: 0, card: 0, others: 0, goals: [], history: [] };
+        // --- GOOGLE DRIVE CONFIG ---
+        // IMPORTANTE: Cole aqui o seu Client ID gerado no Google Cloud Console
+        const GOOGLE_CLIENT_ID = "562176495174-kee3hv4p6bc07r8i58qvs7l354v33hm6.apps.googleusercontent.com";
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+        let driveMasterFolderId = null; // ID da pasta "Controle de produção"
+
+        const state = { projects: [] };
         let currentUser = null;
 
         // Init Firebase
@@ -299,222 +280,227 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Referências da DOM
         const els = {
-            inputIncome: document.getElementById('input-income'),
-            inputCard: document.getElementById('input-card'),
-            inputOthers: document.getElementById('input-others'),
-            headerBalance: document.getElementById('header-balance'),
-            expensePercentage: document.getElementById('expense-percentage'),
-            barCard: document.getElementById('bar-card'),
-            barOthers: document.getElementById('bar-others'),
-            
-            transForm: document.getElementById('trans-form'),
-            historyList: document.getElementById('history-list'),
-            emptyHistoryMsg: document.getElementById('empty-history-msg'),
-            
-            goalForm: document.getElementById('goal-form'),
-            goalsList: document.getElementById('goals-list'),
-            emptyMsg: document.getElementById('empty-goals-msg'),
-            
-            floatingBar: document.getElementById('floating-bar'),
-            floatingForm: document.getElementById('floating-form'),
-            floatingInput: document.getElementById('floating-input'),
-            
+            form: document.getElementById('project-form'),
+            list: document.getElementById('projects-list'),
+            emptyMsg: document.getElementById('empty-msg'),
+            resumoPendente: document.getElementById('resumo-pendente'),
+            resumoPago: document.getElementById('resumo-pago'),
             chatModal: document.getElementById('chat-modal'),
+            floatingBar: document.getElementById('floating-bar'),
+            floatingInput: document.getElementById('floating-input'),
+            modalInput: document.getElementById('modal-input'),
             chatWindow: document.getElementById('chat-window'),
-            modalForm: document.getElementById('modal-form'),
-            modalInput: document.getElementById('modal-input')
+            btnDrive: document.getElementById('btn-drive-auth'),
+            statusDrive: document.getElementById('drive-status')
         };
 
-        // --- SISTEMA DE AUTENTICAÇÃO ---
+        // --- INICIALIZAÇÃO GOOGLE DRIVE API ---
+        window.onload = function() {
+            gapi.load('client', initializeGapiClient);
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                        els.statusDrive.innerText = "Drive Conectado";
+                        els.btnDrive.classList.add('bg-green-500/20', 'border-green-500/50', 'text-green-400');
+                        els.btnDrive.classList.remove('border-blue-500/30', 'text-blue-400');
+                        checkOrCreateMasterFolder();
+                    }
+                },
+            });
+            gisInited = true;
+        };
+
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
+                gapiInited = true;
+            } catch (error) {
+                console.error("Erro no GAPI", error);
+            }
+        }
+
+        window.handleAuthClick = function() {
+            if (GOOGLE_CLIENT_ID.includes("SEU_CLIENT_ID")) {
+                alert("Atenção: Você precisa configurar o GOOGLE_CLIENT_ID no código para usar o Drive.");
+                return;
+            }
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        }
+
+        // Lógica do Drive: Pasta Mestra
+        async function checkOrCreateMasterFolder() {
+            try {
+                const response = await gapi.client.drive.files.list({
+                    q: "mimeType='application/vnd.google-apps.folder' and name='Controle de produção' and trashed=false",
+                    fields: 'files(id, name)',
+                    spaces: 'drive'
+                });
+                if (response.result.files.length > 0) {
+                    driveMasterFolderId = response.result.files[0].id;
+                } else {
+                    const folder = await gapi.client.drive.files.create({
+                        resource: { name: 'Controle de produção', mimeType: 'application/vnd.google-apps.folder' },
+                        fields: 'id'
+                    });
+                    driveMasterFolderId = folder.result.id;
+                }
+            } catch (err) {
+                console.error("Erro ao criar pasta mestra", err);
+            }
+        }
+
+        // --- SISTEMA FIREBASE ---
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (tokenError) {
+                        console.warn("Token customizado falhou (comum ao usar Firebase próprio). Fazendo fallback para login anônimo...", tokenError);
+                        await signInAnonymously(auth);
+                    }
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (error) {
-                console.error("Erro na autenticação do Firebase:", error);
-            }
+            } catch (error) { console.error("Erro Auth:", error); }
         };
         initAuth();
 
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
-            if (user) {
-                setupFirebaseListeners();
+            if (user) setupFirebaseListeners();
+        });
+
+        function setupFirebaseListeners() {
+            const projCol = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'projects');
+            onSnapshot(projCol, (snapshot) => {
+                state.projects = [];
+                snapshot.forEach(doc => state.projects.push({ id: doc.id, ...doc.data() }));
+                state.projects.sort((a, b) => b.timestamp - a.timestamp);
+                updateResumo();
+                renderProjects();
+            }, (err) => console.error("Erro Firestore:", err));
+        }
+
+        // --- UI E LÓGICA DE NEGÓCIO ---
+        document.getElementById('proj-order-date').value = new Date().toISOString().split('T')[0];
+
+        els.form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const name = document.getElementById('proj-name').value;
+            const client = document.getElementById('proj-client').value;
+            const type = document.getElementById('proj-type').value;
+            const status = document.getElementById('proj-status').value;
+            const orderDate = document.getElementById('proj-order-date').value;
+            const deadline = document.getElementById('proj-deadline').value;
+            const value = parseFloat(document.getElementById('proj-value').value);
+            const payment = document.getElementById('proj-payment').value;
+            const payDate = document.getElementById('proj-pay-date').value;
+
+            const projId = Date.now().toString();
+            let folderId = null;
+
+            // Cria a pasta no Drive se estiver logado
+            if (gapi.client.getToken() && driveMasterFolderId) {
+                try {
+                    const folderMsg = `${client} - ${name}`;
+                    const folder = await gapi.client.drive.files.create({
+                        resource: { name: folderMsg, mimeType: 'application/vnd.google-apps.folder', parents: [driveMasterFolderId] },
+                        fields: 'id'
+                    });
+                    folderId = folder.result.id;
+                } catch (err) { console.error("Erro ao criar pasta do projeto", err); }
+            }
+
+            const newProj = {
+                id: projId, name, client, type, status, orderDate, deadline, value, payment, payDate,
+                driveFolderId: folderId, timestamp: Date.now()
+            };
+
+            els.form.reset();
+            document.getElementById('proj-order-date').value = new Date().toISOString().split('T')[0];
+
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', projId);
+                await setDoc(ref, newProj);
+            } catch (error) {
+                console.error(error);
+                appendMessage('ai', "Erro ao salvar no banco. Verifique as regras do Firebase.");
             }
         });
 
-        // --- CONEXÃO DE DADOS (FIRESTORE) ---
-        function setupFirebaseListeners() {
-            // Escutando os totais (Renda, Cartão, Outros)
-            const summaryRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'monthly', 'data');
-            onSnapshot(summaryRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    // Só atualiza o input se o usuário não estiver digitando nele, para evitar bugs na tela
-                    if (document.activeElement !== els.inputIncome) els.inputIncome.value = data.income || 0;
-                    if (document.activeElement !== els.inputCard) els.inputCard.value = data.card || 0;
-                    if (document.activeElement !== els.inputOthers) els.inputOthers.value = data.others || 0;
-                    updateFinancialsLocal();
-                }
-            }, (err) => console.error("Erro no Listener de Resumo:", err));
-
-            // Escutando o Histórico
-            const historyCol = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'history');
-            onSnapshot(historyCol, (snapshot) => {
-                state.history = [];
-                snapshot.forEach(doc => state.history.push({ id: doc.id, ...doc.data() }));
-                // Ordena do mais recente para o mais antigo
-                state.history.sort((a, b) => b.timestamp - a.timestamp);
-                renderHistory();
-            }, (err) => console.error("Erro no Listener de Histórico:", err));
-
-            // Escutando as Metas
-            const goalsCol = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'goals');
-            onSnapshot(goalsCol, (snapshot) => {
-                state.goals = [];
-                snapshot.forEach(doc => state.goals.push({ id: doc.id, ...doc.data() }));
-                state.goals.sort((a, b) => b.timestamp - a.timestamp);
-                renderGoals();
-            }, (err) => console.error("Erro no Listener de Metas:", err));
-        }
-
-        async function saveSummaryToCloud() {
+        window.removeProject = async function(id) {
             if (!currentUser) return;
-            const summaryRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'monthly', 'data');
-            await setDoc(summaryRef, {
-                income: parseFloat(els.inputIncome.value) || 0,
-                card: parseFloat(els.inputCard.value) || 0,
-                others: parseFloat(els.inputOthers.value) || 0
-            }, { merge: true });
-        }
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()));
+            } catch(error) { console.error(error); }
+        };
 
-        // --- INICIALIZAÇÃO DA INTERFACE ---
-        function init() {
-            // Listeners dos inputs de dinheiro (salva na nuvem quando perde o foco)
-            [els.inputIncome, els.inputCard, els.inputOthers].forEach(input => {
-                input.addEventListener('change', () => {
-                    updateFinancialsLocal();
-                    saveSummaryToCloud();
+        window.changeStatus = async function(id, newStatus) {
+            if (!currentUser) return;
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()), { status: newStatus });
+            } catch(error) { console.error(error); }
+        };
+
+        window.triggerUpload = function(id) {
+            if (!gapi.client.getToken()) {
+                alert("Conecte seu Google Drive lá em cima primeiro!");
+                return;
+            }
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'video/*';
+            input.onchange = (e) => uploadToDrive(e.target.files[0], id);
+            input.click();
+        };
+
+        async function uploadToDrive(file, projectId) {
+            if (!file) return;
+            const proj = state.projects.find(p => p.id === projectId);
+            if (!proj || !proj.driveFolderId) {
+                alert("Este projeto não tem uma pasta vinculada no Drive.");
+                return;
+            }
+
+            // UI Feedback
+            const btn = document.getElementById(`btn-up-${projectId}`);
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner upload-spin"></i> Subindo...`;
+            btn.disabled = true;
+
+            try {
+                // Lógica de Upload Multipart (Para arquivos médios)
+                const metadata = { name: file.name, parents: [proj.driveFolderId] };
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', file);
+
+                const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
+                    body: form
                 });
-                input.addEventListener('input', updateFinancialsLocal); // Só atualiza a barrinha na hora
-            });
-            
-            document.getElementById('trans-date').value = new Date().toISOString().split('T')[0];
-            
-            els.transForm.addEventListener('submit', handleAddTransaction);
-            els.goalForm.addEventListener('submit', handleAddGoal);
-            
-            // Listeners do Chat
-            els.floatingForm.addEventListener('submit', (e) => handleChatSubmit(e, els.floatingInput));
-            els.modalForm.addEventListener('submit', (e) => handleChatSubmit(e, els.modalInput));
-            
-            els.floatingBar.addEventListener('click', (e) => {
-                if (els.chatModal.classList.contains('chat-closed')) window.toggleChat();
-            });
-            els.floatingInput.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (els.chatModal.classList.contains('chat-closed')) window.toggleChat();
-            });
-            els.floatingInput.addEventListener('focus', (e) => {
-                if (els.chatModal.classList.contains('chat-closed')) window.toggleChat();
-            });
-        }
 
-        // --- FUNÇÕES EXPORTADAS PARA O WINDOW (HTML) ---
-        // Como agora usamos module, o HTML não enxerga as funções automaticamente
-        
-        window.toggleChat = function() {
-            const isClosed = els.chatModal.classList.contains('chat-closed');
-            if (isClosed) {
-                els.chatModal.classList.remove('chat-closed');
-                els.chatModal.classList.add('chat-open');
-                els.floatingBar.style.opacity = '0';
-                els.floatingBar.style.pointerEvents = 'none';
-                document.body.classList.add('no-scroll'); 
-                
-                if (els.floatingInput.value) {
-                    els.modalInput.value = els.floatingInput.value;
-                    els.floatingInput.value = '';
-                }
-                setTimeout(() => els.modalInput.focus(), 300);
-            } else {
-                els.chatModal.classList.remove('chat-open');
-                els.chatModal.classList.add('chat-closed');
-                els.floatingBar.style.opacity = '1';
-                els.floatingBar.style.pointerEvents = 'auto';
-                document.body.classList.remove('no-scroll');
-            }
-        };
-
-        window.requestFullAnalysis = async function(e) {
-            if (e) e.stopPropagation();
-            if (els.chatModal.classList.contains('chat-closed')) {
-                window.toggleChat();
-            }
-            const prompt = "Por favor, faça uma análise geral do meu mês atual baseada nos dados que eu informei.";
-            appendMessage('user', "Faz um resumão do meu mês aí.");
-            await processAIPrompt(prompt);
-        };
-
-        window.removeTransaction = async function(id) {
-            if (!currentUser) return;
-            const trans = state.history.find(t => t.id === id);
-            if (trans) {
-                // Desconta do total visualmente antes de salvar
-                if (trans.type === 'card') {
-                    const newVal = parseFloat(els.inputCard.value || 0) - trans.value;
-                    els.inputCard.value = newVal > 0 ? newVal.toFixed(2) : 0;
+                if(res.ok) {
+                    btn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> Sucesso!`;
+                    setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 3000);
                 } else {
-                    const newVal = parseFloat(els.inputOthers.value || 0) - trans.value;
-                    els.inputOthers.value = newVal > 0 ? newVal.toFixed(2) : 0;
+                    throw new Error("Upload falhou");
                 }
-                updateFinancialsLocal();
-                saveSummaryToCloud();
-
-                // Deleta da coleção no banco
-                const transRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', id.toString());
-                await deleteDoc(transRef);
-            }
-        };
-
-        window.removeGoal = async function(id) {
-            if (!currentUser) return;
-            const goalRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', id.toString());
-            await deleteDoc(goalRef);
-        };
-
-        // --- LÓGICA DE INTERFACE E CÁLCULO ---
-        function updateFinancialsLocal() {
-            state.income = parseFloat(els.inputIncome.value) || 0;
-            state.card = parseFloat(els.inputCard.value) || 0;
-            state.others = parseFloat(els.inputOthers.value) || 0;
-
-            const totalExpenses = state.card + state.others;
-            const balance = state.income - totalExpenses;
-
-            els.headerBalance.textContent = formatCurrency(balance);
-            if (balance < 0) els.headerBalance.className = "text-lg sm:text-xl font-bold text-red-500";
-            else if (balance === 0) els.headerBalance.className = "text-lg sm:text-xl font-bold text-zinc-400";
-            else els.headerBalance.className = "text-lg sm:text-xl font-bold text-green-400";
-
-            if (state.income > 0) {
-                const cardPct = Math.min((state.card / state.income) * 100, 100);
-                const othersPct = Math.min((state.others / state.income) * 100, 100 - cardPct);
-                const totalPct = ((totalExpenses / state.income) * 100).toFixed(1);
-
-                els.barCard.style.width = `${cardPct}%`;
-                els.barOthers.style.width = `${othersPct}%`;
-                els.expensePercentage.textContent = `${totalPct}%`;
-                els.expensePercentage.className = totalPct > 100 ? "font-bold text-red-500" : "font-bold text-white";
-            } else {
-                els.barCard.style.width = `0%`;
-                els.barOthers.style.width = `0%`;
-                els.expensePercentage.textContent = `0%`;
+            } catch (err) {
+                console.error(err);
+                btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> Erro`;
+                setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 3000);
             }
         }
 
@@ -522,196 +508,144 @@
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
         }
 
-        // --- CONTROLES DE FORMULÁRIO ---
-        async function handleAddTransaction(e) {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            const desc = document.getElementById('trans-desc').value;
-            const value = parseFloat(document.getElementById('trans-value').value);
-            const type = document.getElementById('trans-type').value;
-            const date = document.getElementById('trans-date').value;
-
-            if (desc && value > 0) {
-                const transId = Date.now().toString();
-                const transRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', transId);
-                
-                // Dispara pro Firestore
-                await setDoc(transRef, { id: transId, desc, value, type, date, timestamp: Date.now() });
-                
-                // Atualiza e salva o resumo mensal instantaneamente
-                if (type === 'card') {
-                    els.inputCard.value = (parseFloat(els.inputCard.value || 0) + value).toFixed(2);
-                } else {
-                    els.inputOthers.value = (parseFloat(els.inputOthers.value || 0) + value).toFixed(2);
-                }
-                
-                updateFinancialsLocal();
-                saveSummaryToCloud();
-                
-                els.transForm.reset();
-                document.getElementById('trans-date').value = new Date().toISOString().split('T')[0];
-            }
-        }
-
-        async function handleAddGoal(e) {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            const name = document.getElementById('goal-name').value;
-            const target = parseFloat(document.getElementById('goal-target').value);
-            const current = parseFloat(document.getElementById('goal-current').value);
-
-            if (name && target > 0) {
-                const goalId = Date.now().toString();
-                const goalRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', goalId);
-                
-                await setDoc(goalRef, { id: goalId, name, target, current, timestamp: Date.now() });
-                els.goalForm.reset();
-            }
-        }
-
-        // --- RENDERIZADORES ---
-        function renderHistory() {
-            if (state.history.length === 0) {
-                els.emptyHistoryMsg.style.display = 'block';
-                els.historyList.innerHTML = '';
-                els.historyList.appendChild(els.emptyHistoryMsg);
-                return;
-            }
-
-            els.emptyHistoryMsg.style.display = 'none';
-            els.historyList.innerHTML = '';
-
-            state.history.forEach(trans => {
-                const isCard = trans.type === 'card';
-                const icon = isCard ? 'fa-solid fa-credit-card text-purple-400' : 'fa-brands fa-pix text-teal-400';
-                const dateParts = trans.date.split('-');
-                const shortDate = `${dateParts[2]}/${dateParts[1]}`;
-
-                const el = document.createElement('div');
-                el.className = 'flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-2xl group item-enter hover:bg-white/10 transition-colors cursor-default shadow-sm';
-                el.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-black/20 border border-white/5 flex items-center justify-center shadow-inner">
-                            <i class="${icon} text-sm"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-[15px] font-semibold text-zinc-100 tracking-tight">${trans.desc}</h4>
-                            <p class="text-[11px] font-medium text-zinc-500 tracking-wide uppercase mt-0.5">${shortDate} • ${isCard ? 'Cartão' : 'Pix/Outro'}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="text-[15px] font-bold text-zinc-100">${formatCurrency(trans.value)}</span>
-                        <button onclick="window.removeTransaction('${trans.id}')" class="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-trash text-xs"></i>
-                        </button>
-                    </div>
-                `;
-                els.historyList.appendChild(el);
+        function updateResumo() {
+            let pendente = 0; let pago = 0;
+            state.projects.forEach(p => {
+                if (p.payment === 'Pendente') pendente += p.value;
+                else if (p.payment === '50%') { pago += (p.value/2); pendente += (p.value/2); }
+                else if (p.payment === '100%') pago += p.value;
             });
+            els.resumoPendente.textContent = formatCurrency(pendente);
+            els.resumoPago.textContent = formatCurrency(pago);
         }
 
-        function renderGoals() {
-            if (state.goals.length === 0) {
+        function renderProjects() {
+            if (state.projects.length === 0) {
                 els.emptyMsg.style.display = 'block';
-                els.goalsList.innerHTML = '';
-                els.goalsList.appendChild(els.emptyMsg);
+                els.list.innerHTML = '';
+                els.list.appendChild(els.emptyMsg);
                 return;
             }
 
             els.emptyMsg.style.display = 'none';
-            els.goalsList.innerHTML = '';
+            els.list.innerHTML = '';
 
-            state.goals.forEach(goal => {
-                const pct = Math.min((goal.current / goal.target) * 100, 100).toFixed(1);
-                
-                const goalEl = document.createElement('div');
-                goalEl.className = 'bg-white/5 border border-white/10 p-5 rounded-3xl relative group item-enter hover:bg-white/10 transition-colors shadow-sm';
-                goalEl.innerHTML = `
-                    <button onclick="window.removeGoal('${goal.id}')" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
+            state.projects.forEach(proj => {
+                let statusColor = "text-zinc-400";
+                if(proj.status === "Finalizado") statusColor = "text-green-400";
+                if(proj.status === "Captação") statusColor = "text-red-400";
+                if(proj.status === "Edição") statusColor = "text-blue-400";
+
+                let payColor = proj.payment === "100%" ? "bg-green-500/20 text-green-400" : (proj.payment === "50%" ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400");
+
+                const dateParts = proj.deadline.split('-');
+                const deadBR = `${dateParts[2]}/${dateParts[1]}`;
+
+                const el = document.createElement('div');
+                el.className = 'bg-white/5 border border-white/10 p-5 rounded-3xl relative group item-enter hover:bg-white/10 transition-colors shadow-sm flex flex-col gap-3';
+                el.innerHTML = `
+                    <button onclick="window.removeProject('${proj.id}')" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <i class="fa-solid fa-trash text-xs"></i>
                     </button>
-                    <div class="flex justify-between items-end mb-3 pr-8">
-                        <h3 class="font-semibold text-[16px] text-zinc-100 tracking-tight">${goal.name}</h3>
-                        <span class="text-xs font-medium text-zinc-400 bg-black/20 px-2 py-1 rounded-md border border-white/5">${formatCurrency(goal.current)} / ${formatCurrency(goal.target)}</span>
-                    </div>
-                    <div class="w-full bg-black/30 rounded-full h-2.5 overflow-hidden mb-1.5 border border-white/5 shadow-inner">
-                        <div class="bg-green-500 h-full transition-all duration-700 ease-out relative" style="width: ${pct}%">
-                            <div class="absolute inset-0 bg-white/20 w-full h-full"></div>
+                    
+                    <div class="flex justify-between items-start pr-8">
+                        <div>
+                            <h3 class="font-bold text-lg text-zinc-100">${proj.name}</h3>
+                            <p class="text-xs text-zinc-400 font-medium uppercase tracking-wider">${proj.client} • ${proj.type}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] uppercase text-zinc-500 block">Deadline</span>
+                            <span class="font-bold text-red-400">${deadBR}</span>
                         </div>
                     </div>
-                    <div class="text-right text-xs font-bold text-green-400 tracking-wide">${pct}%</div>
+
+                    <div class="flex justify-between items-center bg-black/20 p-3 rounded-2xl border border-white/5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold ${statusColor}"><i class="fa-solid fa-circle text-[8px] mr-1 mb-0.5"></i>${proj.status}</span>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span class="font-bold text-zinc-100">${formatCurrency(proj.value)}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-md mt-1 ${payColor} font-bold">${proj.payment}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mt-1">
+                        <select onchange="window.changeStatus('${proj.id}', this.value)" class="flex-1 bg-black/30 border-none text-xs! p-2! rounded-xl focus:ring-0">
+                            <option value="Captação" ${proj.status==='Captação'?'selected':''}>Captação</option>
+                            <option value="Edição" ${proj.status==='Edição'?'selected':''}>Edição</option>
+                            <option value="Revisão" ${proj.status==='Revisão'?'selected':''}>Revisão</option>
+                            <option value="Finalizado" ${proj.status==='Finalizado'?'selected':''}>Finalizado</option>
+                        </select>
+                        <button id="btn-up-${proj.id}" onclick="window.triggerUpload('${proj.id}')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 rounded-xl flex items-center gap-2 transition-colors ${proj.driveFolderId ? '' : 'opacity-50 cursor-not-allowed'}" ${proj.driveFolderId ? '' : 'title="Sem pasta no Drive"'}>
+                            <i class="fa-brands fa-google-drive"></i> Vídeo
+                        </button>
+                    </div>
                 `;
-                els.goalsList.appendChild(goalEl);
+                els.list.appendChild(el);
             });
         }
 
         // --- SISTEMA DE IA E CHAT ---
+        els.floatingBar.addEventListener('click', () => { if (els.chatModal.classList.contains('chat-closed')) toggleChat(); });
+        document.getElementById('floating-form').addEventListener('submit', (e) => handleChatSubmit(e, els.floatingInput));
+        document.getElementById('modal-form').addEventListener('submit', (e) => handleChatSubmit(e, els.modalInput));
+
+        window.toggleChat = function() {
+            const isClosed = els.chatModal.classList.contains('chat-closed');
+            if (isClosed) {
+                els.chatModal.classList.remove('chat-closed'); els.chatModal.classList.add('chat-open');
+                els.floatingBar.style.opacity = '0'; els.floatingBar.style.pointerEvents = 'none';
+                document.body.classList.add('no-scroll'); 
+                if (els.floatingInput.value) { els.modalInput.value = els.floatingInput.value; els.floatingInput.value = ''; }
+                setTimeout(() => els.modalInput.focus(), 300);
+            } else {
+                els.chatModal.classList.remove('chat-open'); els.chatModal.classList.add('chat-closed');
+                els.floatingBar.style.opacity = '1'; els.floatingBar.style.pointerEvents = 'auto';
+                document.body.classList.remove('no-scroll');
+            }
+        };
+
+        window.requestFullAnalysis = async function(e) {
+            if (e) e.stopPropagation();
+            if (els.chatModal.classList.contains('chat-closed')) toggleChat();
+            appendMessage('user', "Me passa um relatório da produtora.");
+            await processAIPrompt("Por favor, faça uma análise dos meus projetos, pagamentos pendentes e deadlines.");
+        };
+
         async function handleChatSubmit(e, inputEl) {
             e.preventDefault();
             const text = inputEl.value.trim();
-
-            if (els.chatModal.classList.contains('chat-closed')) {
-                window.toggleChat();
-                if (!text) return; 
-            } else if (!text) {
-                return; 
-            }
-
-            els.floatingInput.value = '';
-            els.modalInput.value = '';
-
+            if (els.chatModal.classList.contains('chat-closed')) { toggleChat(); if (!text) return; } else if (!text) return;
+            els.floatingInput.value = ''; els.modalInput.value = '';
             appendMessage('user', text);
             await processAIPrompt(text);
         }
 
         function generateContextString() {
-            const balance = state.income - (state.card + state.others);
-            let context = `DADOS:\n- Renda: R$ ${state.income}\n- Fatura: R$ ${state.card}\n- Outros: R$ ${state.others}\n- Saldo Previsto: R$ ${balance}\n`;
-            
-            if (state.history.length > 0) {
-                context += `- Histórico:\n` + state.history.map(h => `  * [Data: ${h.date}] ${h.desc} - R$ ${h.value} (${h.type === 'card' ? 'Cartão' : 'Pix'})`).join('\n') + '\n';
-            }
-            if (state.goals.length > 0) {
-                context += `- Metas:\n` + state.goals.map(g => `  * ${g.name}: ${g.current}/${g.target}`).join('\n');
-            }
+            let context = `DADOS DA PRODUTORA DE VÍDEOS:\n`;
+            if (state.projects.length > 0) {
+                state.projects.forEach(p => {
+                    context += `- Projeto: ${p.name} | Cliente: ${p.client} | Status: ${p.status} | Deadline: ${p.deadline} | Valor: R$ ${p.value} | Pagamento: ${p.payment}\n`;
+                });
+            } else { context += "Nenhum projeto no momento."; }
             return context;
         }
 
         async function processAIPrompt(userMessage) {
             const typingId = appendTypingIndicator();
             const fullPrompt = `${generateContextString()}\n\nO usuário diz: "${userMessage}"`;
-            const systemPrompt = `Você é um colega de trabalho e parceiro financeiro do usuário. Ajude a analisar os dados de forma direta, informal e prática. Nada de ser excessivamente polido. Vá direto ao ponto, faça contas rápidas. Seja conciso (máx 2-3 parágrafos curtos).`;
+            const systemPrompt = `Você é um Produtor Executivo e parceiro da produtora de vídeos do usuário. Analise os deadlines (prazos), status das edições e valores pendentes. Fale de forma direta, linguagem de audiovisual (render, captação, job). Seja conciso.`;
 
             try {
-                const responseText = await callGeminiAPI(fullPrompt, systemPrompt);
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+                const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] } }) });
+                if (!res.ok) throw new Error();
+                const result = await res.json();
                 removeMessage(typingId);
-                appendMessage('ai', responseText);
+                appendMessage('ai', result.candidates[0].content.parts[0].text);
             } catch (error) {
-                console.error("Erro LLM", error);
                 removeMessage(typingId);
-                appendMessage('ai', "Mano, deu erro na conexão direta com o Google. Dá um confere na internet ou verifica se a chave da API tá certa.");
-            }
-        }
-
-        // Voltamos para a chamada direta via Fetch, 100% grátis e sem backend
-        async function callGeminiAPI(prompt, systemPrompt) {
-            // Usando o modelo gratuito flash
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] } };
-            const retries = 5, delays = [1000, 2000, 4000, 8000, 16000];
-
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!res.ok) throw new Error(res.status);
-                    const result = await res.json();
-                    return result.candidates[0].content.parts[0].text;
-                } catch (error) {
-                    if (i === retries - 1) throw error;
-                    await new Promise(r => setTimeout(r, delays[i]));
-                }
+                appendMessage('ai', "Erro no servidor da IA. Tenta de novo.");
             }
         }
 
@@ -719,11 +653,7 @@
             const msgDiv = document.createElement('div');
             msgDiv.className = `flex items-start gap-2 max-w-[85%] msg-anim ${sender === 'user' ? 'self-end flex-row-reverse' : ''} mt-3`;
             const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-
-            const bubbleClass = sender === 'user' 
-                ? 'bg-blue-600 text-white rounded-[24px] rounded-br-[8px] p-4 sm:p-5 text-[15px] leading-relaxed shadow-lg shadow-blue-900/20'
-                : 'bg-white/10 backdrop-blur-md border border-white/10 rounded-[24px] rounded-tl-[8px] p-4 sm:p-5 text-[15px] leading-relaxed text-zinc-200 shadow-xl';
-
+            const bubbleClass = sender === 'user' ? 'bg-purple-600 text-white rounded-[24px] rounded-br-[8px] p-4 sm:p-5 text-[15px] shadow-lg shadow-purple-900/20' : 'bg-white/10 backdrop-blur-md border border-white/10 rounded-[24px] rounded-tl-[8px] p-4 sm:p-5 text-[15px] text-zinc-200 shadow-xl';
             msgDiv.innerHTML = `<div class="${bubbleClass}">${formattedText}</div>`;
             els.chatWindow.appendChild(msgDiv);
             els.chatWindow.scrollTo({ top: els.chatWindow.scrollHeight, behavior: 'smooth' });
@@ -740,13 +670,7 @@
             return id;
         }
 
-        function removeMessage(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        // Start
-        init();
+        function removeMessage(id) { const el = document.getElementById(id); if (el) el.remove(); }
     </script>
 </body>
 </html>
