@@ -1,532 +1,495 @@
-
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Video Master - Produção</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowCloud Daily | Gestão de Projetos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Customizando a scrollbar */
-        ::-webkit-scrollbar { width: 0px; } 
-        
-        /* Efeito glassmorphism iOS 26 */
-        .glass-panel {
-            background: rgba(30, 30, 35, 0.45);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            border-radius: 32px;
-        }
-
-        @keyframes slideInItem {
-            from { opacity: 0; transform: translateX(-15px) scale(0.98); }
-            to { opacity: 1; transform: translateX(0) scale(1); }
-        }
-        .item-enter { animation: slideInItem 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-
-        /* Inputs Premium */
-        input[type="text"], input[type="number"], input[type="date"], select {
-            background-color: rgba(255, 255, 255, 0.04) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            border-radius: 18px !important;
-            padding: 14px 18px !important;
-            font-size: 15px !important;
-            color: white !important;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
-            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
-        }
-        input:focus, select:focus {
-            background-color: rgba(255, 255, 255, 0.08) !important;
-            border-color: rgba(168, 85, 247, 0.6) !important;
-            transform: scale(1.01);
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15), inset 0 2px 10px rgba(0,0,0,0.1) !important;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
-
-        .no-scroll { overflow: hidden; }
-        
-        /* Upload status loader */
-        .upload-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        /* Customizando a barra de rolagem horizontal da tabela */
-        .table-container::-webkit-scrollbar { height: 8px; }
-        .table-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 8px; }
-        .table-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 8px; }
+        body { font-family: 'Inter', sans-serif; letter-spacing: -0.01em; }
+        .drag-ghost { opacity: 0.4; transform: scale(0.95); }
+        .drop-target { background-color: #f1f5f9; border: 2px dashed #6366f1 !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .task-card { border-left-width: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .task-card:hover { transform: translateY(-1px); filter: brightness(0.98); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .day-btn-active { background-color: #6366f1; color: white; border-color: #6366f1; }
     </style>
 </head>
-<body class="bg-[#050507] bg-gradient-to-br from-[#09090b] to-[#18181b] text-zinc-100 font-sans min-h-screen flex flex-col selection:bg-purple-500/30">
+<body class="bg-[#f8fafc] text-slate-900 h-screen flex flex-col overflow-hidden">
 
-    <div class="max-w-6xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 flex flex-col gap-6 pb-32">
-        
-        <header class="flex justify-between items-center border-b border-zinc-800 pb-6 pt-2">
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">PROJECT<span class="text-purple-500">Manager</span></h1>
-                <p class="text-xs text-zinc-500 mt-1">Gestão de Produção & Drive</p>
+    <!-- Header -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm shrink-0 z-20">
+        <div class="flex items-center gap-10">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-slate-800 leading-tight">FlowCloud</h1>
+                    <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Daily & Projects</p>
+                </div>
             </div>
             
-            <div class="flex gap-2">
-                <button id="btn-drive-auth" onclick="window.handleAuthClick()" class="glass-panel px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-white/10 transition-colors border-blue-500/30 text-blue-400">
-                    <i class="fa-brands fa-google-drive"></i> <span id="drive-status">Conectar Drive</span>
-                </button>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-2 gap-4">
-            <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
-                <span class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">A Receber (Pendentes)</span>
-                <div id="resumo-pendente" class="text-xl font-bold text-orange-400">R$ 0,00</div>
-            </div>
-            <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
-                <span class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Faturado (Pagos)</span>
-                <div id="resumo-pago" class="text-xl font-bold text-green-400">R$ 0,00</div>
+            <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <input type="text" id="workspaceInput" placeholder="Workspace..." class="bg-transparent border-none text-xs font-bold px-3 py-1 outline-none text-indigo-600 w-32" onchange="changeWorkspace(this.value)">
+                <span class="text-[10px] text-slate-400 font-bold uppercase pr-2">Área</span>
             </div>
         </div>
-
-        <section class="glass-panel p-5 sm:p-6 rounded-2xl shadow-lg">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-clapperboard text-purple-500"></i> Novo Projeto
-            </h2>
-
-            <form id="project-form" class="flex flex-col gap-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input type="text" id="proj-name" placeholder="Nome do Projeto (Ex: Casamento João)" required class="w-full">
-                    <input type="text" id="proj-client" placeholder="Cliente" required class="w-full">
-                </div>
-                
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <select id="proj-type" required class="w-full">
-                        <option value="" disabled selected>Tipo</option>
-                        <option value="Reels/TikTok">Reels/TikTok</option>
-                        <option value="YouTube">YouTube</option>
-                        <option value="Institucional">Institucional</option>
-                        <option value="Casamento">Casamento</option>
-                        <option value="Outro">Outro</option>
-                    </select>
-                    
-                    <select id="proj-status" required class="w-full">
-                        <option value="Captação">🎥 Captação</option>
-                        <option value="Edição">💻 Edição</option>
-                        <option value="Revisão">👀 Revisão</option>
-                        <option value="Finalizado">✅ Finalizado</option>
-                    </select>
-
-                    <div class="space-y-1">
-                        <label class="text-[10px] text-zinc-500 uppercase ml-2">Pedido</label>
-                        <input type="date" id="proj-order-date" required class="w-full text-sm p-3!">
-                    </div>
-                    
-                    <div class="space-y-1">
-                        <label class="text-[10px] text-zinc-500 uppercase ml-2">Deadline</label>
-                        <input type="date" id="proj-deadline" required class="w-full text-sm p-3!">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                    <input type="number" id="proj-value" placeholder="Valor Total (R$)" required min="0" step="0.01" class="w-full">
-                    
-                    <select id="proj-payment" required class="w-full">
-                        <option value="Pendente">Pagamento: Pendente</option>
-                        <option value="50%">Pagamento: 50% Pago</option>
-                        <option value="100%">Pagamento: 100% Pago</option>
-                    </select>
-
-                    <div class="space-y-1">
-                        <label class="text-[10px] text-zinc-500 uppercase ml-2">Data do Pagamento</label>
-                        <input type="date" id="proj-pay-date" class="w-full text-sm p-3!">
-                    </div>
-                </div>
-
-                <button type="submit" class="mt-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-purple-600/20">
-                    <i class="fa-solid fa-plus mr-2"></i> Criar Projeto & Pasta no Drive
-                </button>
-            </form>
-        </section>
-
-        <!-- Tabela de Projetos -->
-        <section class="mt-4 glass-panel p-5 sm:p-6 rounded-2xl shadow-lg overflow-hidden">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-table-list text-purple-500"></i> Controle de Produção
-            </h2>
-            <div class="overflow-x-auto table-container pb-2">
-                <table class="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
-                    <thead>
-                        <tr class="border-b border-white/10 text-[10px] uppercase text-zinc-500 tracking-wider">
-                            <th class="p-3 font-medium">Status</th>
-                            <th class="p-3 font-medium">Nome do Projeto</th>
-                            <th class="p-3 font-medium">Tipo</th>
-                            <th class="p-3 font-medium">Cliente</th>
-                            <th class="p-3 font-medium">Pedido</th>
-                            <th class="p-3 font-medium">Deadline</th>
-                            <th class="p-3 font-medium">Valor</th>
-                            <th class="p-3 font-medium text-center">Pagamento</th>
-                            <th class="p-3 font-medium">Data Pag.</th>
-                            <th class="p-3 font-medium text-center">Drive</th>
-                            <th class="p-3 font-medium text-right">Excluir</th>
-                        </tr>
-                    </thead>
-                    <tbody id="projects-list">
-                        <!-- Linhas serão inseridas aqui via JS -->
-                    </tbody>
-                </table>
+        
+        <div class="flex items-center gap-4">
+            <div id="syncIndicator" class="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100">
+                <div id="syncDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
+                <span id="saveStatus" class="text-[10px] uppercase tracking-widest font-black text-slate-400">Conectando...</span>
             </div>
-        </section>
+            <button onclick="shareLink()" class="p-2 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200 bg-white shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-[10px_0_30px_rgba(0,0,0,0.01)]">
+            <div class="p-6">
+                <h2 class="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-6 italic">Novo Projecto</h2>
+                <div class="space-y-4">
+                    <input type="text" id="projectName" placeholder="Nome do Projecto" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
+                    <select id="projectPriority" class="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média" selected>Média</option>
+                        <option value="Alta">Alta</option>
+                    </select>
+                    <button onclick="addProject()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-bold text-sm transition-all shadow-lg shadow-indigo-100 active:scale-95">
+                        Guardar Projecto
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 overflow-y-auto hide-scrollbar border-t border-slate-50 bg-slate-50/30">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 italic">Biblioteca</h2>
+                    <span id="projectCount" class="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full font-bold text-slate-600">0</span>
+                </div>
+                <div id="projectPool" class="space-y-3"></div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-10 hide-scrollbar bg-[#f8fafc]">
+            <div class="max-w-6xl mx-auto space-y-12">
+                
+                <!-- Seção de Foco: Hoje -->
+                <section id="todaySection" class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/40 animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-800 tracking-tight">O que vou fazer hoje?</h2>
+                            <p id="todayDisplayDate" class="text-sm text-slate-400 font-medium"></p>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span id="progressText" class="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Progresso: 0%</span>
+                            <div class="w-48 h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                                <div id="progressBar" class="h-full bg-indigo-600 transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="todayTaskList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    <div id="noTasksToday" class="hidden py-12 text-center text-slate-300 font-medium italic border-2 border-dashed border-slate-100 rounded-3xl">
+                        Nenhuma tarefa agendada para hoje. Arraste um projecto para começar.
+                    </div>
+                </section>
+
+                <!-- Seção de Calendário -->
+                <section class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <h2 class="text-2xl font-black text-slate-800 tracking-tight">Cronograma</h2>
+                            <div class="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                                <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-lg text-slate-500"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+                                <button onclick="goToToday()" class="px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg">Hoje</button>
+                                <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-lg text-slate-500"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="calendarsWrapper" class="space-y-12"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Dia Detalhado -->
+    <div id="dayModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-fade-in border border-white/20">
+            <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h3 id="modalDateTitle" class="text-xl font-black text-slate-800">Detalhes do Dia</h3>
+                    <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-1">Planeamento Completo</p>
+                </div>
+                <button onclick="closeModal()" class="p-2.5 hover:bg-slate-200 rounded-full text-slate-400 bg-white border border-slate-100 shadow-sm transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="modalTasksList" class="p-8 space-y-8 max-h-[70vh] overflow-y-auto hide-scrollbar">
+                <!-- Conteúdo dinâmico aqui -->
+            </div>
+            <div class="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeModal()" class="bg-slate-900 text-white px-10 py-3.5 rounded-2xl font-bold text-sm hover:bg-indigo-600 transition-all shadow-xl">Salvar e Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl text-sm font-bold opacity-0 pointer-events-none transition-all duration-500 z-[100] border border-white/10 flex items-center gap-3">
+        <div id="toastIcon" class="w-2 h-2 rounded-full bg-emerald-400"></div>
+        <span id="toastMsg">Notificação</span>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- EXPORTANDO FUNÇÕES GLOBAIS PRIMEIRO ---
-        window.handleAuthClick = function() {
-            if (typeof gapi === 'undefined' || !tokenClient) {
-                alert("Aguarde um momento, os serviços do Google ainda estão carregando...");
-                return;
-            }
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        };
-
-        window.removeProject = async function(id) {
-            if (!currentUser) return;
-            if(!confirm("Tem certeza que deseja excluir este projeto?")) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()));
-            } catch(error) { console.error(error); }
-        };
-
-        window.changeStatus = async function(id, newStatus) {
-            if (!currentUser) return;
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()), { status: newStatus });
-            } catch(error) { console.error(error); }
-        };
-
-        window.changePayment = async function(id, newPayment) {
-            if (!currentUser) return;
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id.toString()), { payment: newPayment });
-            } catch(error) { console.error(error); }
-        };
-
-        window.triggerUpload = function(id) {
-            if (!window.gapi || gapi.client.getToken() === null) {
-                alert("Conecte seu Google Drive lá em cima primeiro!");
-                return;
-            }
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'video/*';
-            input.onchange = (e) => uploadToDrive(e.target.files[0], id);
-            input.click();
-        };
-
-        // --- CONFIGURAÇÕES ---
-        const firebaseConfig = {
+        const standaloneConfig = {
             apiKey: "AIzaSyBM3hrJnd0QrpZdsyU0aMfkLjtzd0Sxrs8",
             authDomain: "calendario-7454b.firebaseapp.com",
             projectId: "calendario-7454b",
             storageBucket: "calendario-7454b.firebasestorage.app",
             messagingSenderId: "562176495174",
-            appId: "1:562176495174:web:a5df122b30505a0c860447"
+            appId: "1:562176495174:web:a5df122b30505a0c860447",
+            measurementId: "G-K58NZGG034"
         };
-        const appId = 'video-master-app'; 
 
-        // --- GOOGLE DRIVE CONFIG ---
-        const GOOGLE_CLIENT_ID = "562176495174-kee3hv4p6bc07r8i58qvs7l354v33hm6.apps.googleusercontent.com";
-        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-        let tokenClient;
-        let driveMasterFolderId = null;
-
-        const state = { projects: [] };
-        let currentUser = null;
-
-        // Init Firebase
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : standaloneConfig;
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const els = {
-            form: document.getElementById('project-form'),
-            list: document.getElementById('projects-list'),
-            resumoPendente: document.getElementById('resumo-pendente'),
-            resumoPago: document.getElementById('resumo-pago'),
-            btnDrive: document.getElementById('btn-drive-auth'),
-            statusDrive: document.getElementById('drive-status')
-        };
+        let workspace = localStorage.getItem('daily_workspace') || 'meu-foco';
+        document.getElementById('workspaceInput').value = workspace;
+        
+        let viewMonth = new Date();
+        viewMonth.setDate(1);
 
-        // --- INICIALIZAÇÃO GOOGLE DRIVE API ---
-        function initGoogleApis() {
-            if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
-                gapi.load('client', async () => {
-                    await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
-                });
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID,
-                    scope: SCOPES,
-                    callback: (tokenResponse) => {
-                        if (tokenResponse && tokenResponse.access_token) {
-                            els.statusDrive.innerText = "Drive Conectado";
-                            els.btnDrive.classList.add('bg-green-500/20', 'border-green-500/50', 'text-green-400');
-                            els.btnDrive.classList.remove('border-blue-500/30', 'text-blue-400');
-                            checkOrCreateMasterFolder();
-                        }
-                    },
-                });
-            } else {
-                setTimeout(initGoogleApis, 100);
-            }
-        }
-        initGoogleApis();
+        let user = null;
+        let cloudData = { projects: [], schedule: {} };
+        let selectedDateKey = null;
 
-        async function checkOrCreateMasterFolder() {
-            try {
-                const response = await gapi.client.drive.files.list({
-                    q: "mimeType='application/vnd.google-apps.folder' and name='Controle de produção' and trashed=false",
-                    fields: 'files(id, name)',
-                    spaces: 'drive'
-                });
-                if (response.result.files.length > 0) {
-                    driveMasterFolderId = response.result.files[0].id;
-                } else {
-                    const folder = await gapi.client.drive.files.create({
-                        resource: { name: 'Controle de produção', mimeType: 'application/vnd.google-apps.folder' },
-                        fields: 'id'
-                    });
-                    driveMasterFolderId = folder.result.id;
-                }
-            } catch (err) { console.error("Erro ao criar pasta mestra", err); }
-        }
+        const typeOptions = [
+            { id: 'foco', label: 'Foco Total', icon: '⚡' },
+            { id: 'reuniao', label: 'Reunião', icon: '🤝' },
+            { id: 'estudo', label: 'Estudo', icon: '📚' },
+            { id: 'producao', label: 'Produção', icon: '🛠️' }
+        ];
 
-        // --- SISTEMA FIREBASE (AUTH COM FALLBACK) ---
-        const initAuth = async () => {
+        const recurrenceOptions = [
+            { id: 'none', label: 'Não se repete' },
+            { id: 'daily', label: 'Todos os dias' },
+            { id: 'weekly', label: 'Dias da semana específicos' }
+        ];
+
+        async function initAuth() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (e) {
-                        await signInAnonymously(auth);
-                    }
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (error) { console.error("Erro Auth:", error); }
-        };
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) setupFirebaseListeners();
-        });
-
-        function setupFirebaseListeners() {
-            const projCol = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'projects');
-            onSnapshot(projCol, (snapshot) => {
-                state.projects = [];
-                snapshot.forEach(doc => state.projects.push({ id: doc.id, ...doc.data() }));
-                state.projects.sort((a, b) => b.timestamp - a.timestamp);
-                updateResumo();
-                renderProjects();
-            }, (err) => console.error("Erro Firestore:", err));
+            } catch (e) { showToast("Erro: Ativa o login anônimo!", "bg-red-500"); }
         }
 
-        // --- LÓGICA DE NEGÓCIO E UI ---
-        document.getElementById('proj-order-date').value = new Date().toISOString().split('T')[0];
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) startSync();
+        });
 
-        // SUBMIT DO PROJETO (OTIMIZADO)
-        els.form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                alert("Aguarde, conectando ao banco de dados...");
-                return;
-            }
-
-            const name = document.getElementById('proj-name').value;
-            const client = document.getElementById('proj-client').value;
-            const type = document.getElementById('proj-type').value;
-            const status = document.getElementById('proj-status').value;
-            const orderDate = document.getElementById('proj-order-date').value;
-            const deadline = document.getElementById('proj-deadline').value;
-            const value = parseFloat(document.getElementById('proj-value').value);
-            const payment = document.getElementById('proj-payment').value;
-            const payDate = document.getElementById('proj-pay-date').value;
-
-            const projId = Date.now().toString();
-            const newProj = {
-                id: projId, name, client, type, status, orderDate, deadline, value, payment, payDate,
-                driveFolderId: null, timestamp: Date.now()
-            };
-
-            // 1. Atualização Otimista na Tela (Rápido!)
-            state.projects.unshift(newProj);
-            updateResumo();
-            renderProjects();
+        function startSync() {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
             
-            els.form.reset();
-            document.getElementById('proj-order-date').value = new Date().toISOString().split('T')[0];
-
-            // 2. Tarefas em Background (Salvar e criar pasta)
-            try {
-                // Salva no banco primeiro
-                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', projId);
-                await setDoc(ref, newProj);
-
-                // Tenta criar no Drive se estiver logado
-                if (window.gapi && gapi.client.getToken() && driveMasterFolderId) {
-                    const folderMsg = `${client} - ${name}`;
-                    const folder = await gapi.client.drive.files.create({
-                        resource: { name: folderMsg, mimeType: 'application/vnd.google-apps.folder', parents: [driveMasterFolderId] },
-                        fields: 'id'
-                    });
-                    
-                    newProj.driveFolderId = folder.result.id;
-                    await updateDoc(ref, { driveFolderId: newProj.driveFolderId });
-                    
-                    // Renderiza de novo só pra habilitar o botão de Upload/Link
-                    renderProjects();
-                }
-            } catch (error) {
-                console.error("Erro no background ao salvar projeto:", error);
-            }
-        });
-
-        async function uploadToDrive(file, projectId) {
-            if (!file) return;
-            const proj = state.projects.find(p => p.id === projectId);
-            if (!proj || !proj.driveFolderId) {
-                alert("Este projeto não tem uma pasta vinculada no Drive.");
-                return;
-            }
-
-            const btn = document.getElementById(`btn-up-${projectId}`);
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<i class="fa-solid fa-spinner upload-spin"></i>`;
-            btn.disabled = true;
-
-            try {
-                const metadata = { name: file.name, parents: [proj.driveFolderId] };
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', file);
-
-                const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST',
-                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
-                    body: form
-                });
-
-                if(res.ok) {
-                    btn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i>`;
-                    setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 3000);
-                } else {
-                    throw new Error("Upload falhou");
-                }
-            } catch (err) {
-                console.error(err);
-                btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i>`;
-                setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 3000);
-            }
-        }
-
-        function formatCurrency(value) {
-            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-        }
-        
-        function formatDateBR(dateString) {
-            if (!dateString) return '-';
-            const parts = dateString.split('-');
-            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-            return dateString;
-        }
-
-        function updateResumo() {
-            let pendente = 0; let pago = 0;
-            state.projects.forEach(p => {
-                if (p.payment === 'Pendente') pendente += p.value;
-                else if (p.payment === '50%') { pago += (p.value/2); pendente += (p.value/2); }
-                else if (p.payment === '100%') pago += p.value;
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `projects_${workspace}`), (snapshot) => {
+                cloudData.projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderProjects();
+                document.getElementById('saveStatus').innerText = "Online";
+                document.getElementById('syncDot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-none shadow-[0_0_10px_#10b981]";
             });
-            els.resumoPendente.textContent = formatCurrency(pendente);
-            els.resumoPago.textContent = formatCurrency(pago);
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`), (snapshot) => {
+                cloudData.schedule = {};
+                snapshot.docs.forEach(doc => { cloudData.schedule[doc.id] = doc.data().tasks; });
+                renderCalendars();
+                renderTodayDashboard();
+            });
         }
+
+        window.changeWorkspace = (val) => {
+            workspace = val.toLowerCase().replace(/\s+/g, '-');
+            localStorage.setItem('daily_workspace', workspace);
+            startSync();
+            showToast(`Área: ${workspace}`);
+        };
+
+        window.changeMonth = (delta) => {
+            viewMonth.setMonth(viewMonth.getMonth() + delta);
+            renderCalendars();
+        };
+
+        window.goToToday = () => {
+            viewMonth = new Date(); viewMonth.setDate(1);
+            renderCalendars();
+        };
+
+        window.addProject = async () => {
+            const name = document.getElementById('projectName').value;
+            const priority = document.getElementById('projectPriority').value;
+            if (!name) return showToast("Dê um nome ao projecto!");
+            const colors = [{ border: '#6366f1', bg: '#f5f7ff' }, { border: '#10b981', bg: '#f0fdf4' }, { border: '#f59e0b', bg: '#fffbeb' }, { border: '#ec4899', bg: '#fdf2f8' }, { border: '#8b5cf6', bg: '#f5f3ff' }];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `projects_${workspace}`, Date.now().toString()), { name, priority, color });
+            document.getElementById('projectName').value = '';
+        };
+
+        window.removeProject = async (id) => {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `projects_${workspace}`, id));
+        };
+
+        window.addTaskToSchedule = async (dateKey, project) => {
+            const tasks = cloudData.schedule[dateKey] || [];
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, dateKey), {
+                tasks: [...tasks, { taskId: Date.now().toString(), name: project.name, type: 'producao', status: 'todo', color: project.color, priority: project.priority, description: '', link: '', recurrence: 'none', recurrenceDays: [] }]
+            });
+        };
+
+        window.toggleTaskStatus = async (dateKey, index) => {
+            const tasks = [...cloudData.schedule[dateKey]];
+            tasks[index].status = tasks[index].status === 'done' ? 'todo' : 'done';
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, dateKey), { tasks });
+        };
+
+        window.updateTaskDetail = async (index, field, value) => {
+            const tasks = [...cloudData.schedule[selectedDateKey]];
+            tasks[index][field] = value;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, selectedDateKey), { tasks });
+            renderModalTasks();
+        };
+
+        window.toggleRecurrenceDay = async (taskIdx, day) => {
+            const tasks = [...cloudData.schedule[selectedDateKey]];
+            const currentDays = tasks[taskIdx].recurrenceDays || [];
+            tasks[taskIdx].recurrenceDays = currentDays.includes(day) ? currentDays.filter(d => d !== day) : [...currentDays, day];
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, selectedDateKey), { tasks });
+            renderModalTasks();
+        };
+
+        // --- LÓGICA DE PROPAGAÇÃO ---
+        window.propagateTask = async (taskIdx) => {
+            const task = cloudData.schedule[selectedDateKey][taskIdx];
+            if (task.recurrence === 'none') return showToast("Selecione um tipo de recorrência primeiro.");
+            
+            showToast("Propagando tarefas... Aguarde.", "bg-indigo-600");
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            const [year, month, day] = selectedDateKey.split('-').map(Number);
+            const startDate = new Date(year, month, day);
+
+            // Vamos propagar pelos próximos 90 dias
+            for (let i = 1; i <= 90; i++) {
+                const nextDate = new Date(startDate);
+                nextDate.setDate(startDate.getDate() + i);
+                const nextKey = `${nextDate.getFullYear()}-${nextDate.getMonth()}-${nextDate.getDate()}`;
+                const dayOfWeek = nextDate.getDay();
+
+                let shouldAdd = false;
+                if (task.recurrence === 'daily') shouldAdd = true;
+                if (task.recurrence === 'weekly' && task.recurrenceDays?.includes(dayOfWeek)) shouldAdd = true;
+
+                if (shouldAdd) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, nextKey);
+                    const docSnap = await getDoc(docRef);
+                    let dayTasks = docSnap.exists() ? docSnap.data().tasks : [];
+                    
+                    // Evita duplicados (mesmo nome e tipo no mesmo dia)
+                    if (!dayTasks.find(t => t.name === task.name && t.type === task.type)) {
+                        dayTasks.push({ ...task, taskId: Date.now().toString() + i, status: 'todo' });
+                        await setDoc(docRef, { tasks: dayTasks });
+                    }
+                }
+            }
+            showToast("Tarefa propagada com sucesso!");
+        };
+
+        window.deleteTask = async (index) => {
+            const tasks = [...cloudData.schedule[selectedDateKey]];
+            tasks.splice(index, 1);
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-flow-v2';
+            if (tasks.length === 0) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, selectedDateKey));
+            else await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `schedule_${workspace}`, selectedDateKey), { tasks });
+            renderModalTasks();
+        };
+
+        // --- RENDERING ---
 
         function renderProjects() {
-            if (state.projects.length === 0) {
-                els.list.innerHTML = `<tr><td colspan="11" class="text-center text-zinc-500 py-8 text-sm">Nenhum projeto em andamento.</td></tr>`;
-                return;
-            }
-
-            els.list.innerHTML = '';
-
-            state.projects.forEach(proj => {
-                let statusColor = "text-zinc-400";
-                if(proj.status === "Finalizado") statusColor = "text-green-400";
-                if(proj.status === "Captação") statusColor = "text-red-400";
-                if(proj.status === "Edição") statusColor = "text-blue-400";
-
-                let payColor = proj.payment === "100%" ? "bg-green-500/20 text-green-400" : (proj.payment === "50%" ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400");
-
-                let driveContent = `<span class="text-xs text-zinc-600 italic">S/ Pasta</span>`;
-                if (proj.driveFolderId) {
-                    driveContent = `
-                        <div class="flex items-center justify-center gap-3">
-                            <a href="https://drive.google.com/drive/folders/${proj.driveFolderId}" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors transform hover:scale-110" title="Abrir pasta no Drive">
-                                <i class="fa-solid fa-folder-open text-lg"></i>
-                            </a>
-                            <button id="btn-up-${proj.id}" onclick="window.triggerUpload('${proj.id}')" class="text-purple-400 hover:text-purple-300 transition-colors transform hover:scale-110" title="Fazer Upload do Vídeo">
-                                <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
-                            </button>
-                        </div>
-                    `;
-                }
-
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-white/5 hover:bg-white/5 transition-colors item-enter text-[13px]';
-                tr.innerHTML = `
-                    <td class="p-3">
-                        <select onchange="window.changeStatus('${proj.id}', this.value)" class="bg-black/30 border border-white/10 text-xs p-1.5 rounded-lg focus:ring-0 ${statusColor} font-bold">
-                            <option value="Captação" ${proj.status==='Captação'?'selected':''}>🎥 Captação</option>
-                            <option value="Edição" ${proj.status==='Edição'?'selected':''}>💻 Edição</option>
-                            <option value="Revisão" ${proj.status==='Revisão'?'selected':''}>👀 Revisão</option>
-                            <option value="Finalizado" ${proj.status==='Finalizado'?'selected':''}>✅ Finalizado</option>
-                        </select>
-                    </td>
-                    <td class="p-3 font-semibold text-zinc-100 max-w-[150px] truncate" title="${proj.name}">${proj.name}</td>
-                    <td class="p-3 text-zinc-400">${proj.type}</td>
-                    <td class="p-3 text-zinc-400 max-w-[120px] truncate" title="${proj.client}">${proj.client}</td>
-                    <td class="p-3 text-zinc-400">${formatDateBR(proj.orderDate)}</td>
-                    <td class="p-3 font-bold text-red-400">${formatDateBR(proj.deadline)}</td>
-                    <td class="p-3 font-bold text-zinc-100">${formatCurrency(proj.value)}</td>
-                    <td class="p-3 text-center">
-                        <select onchange="window.changePayment('${proj.id}', this.value)" class="bg-black/30 border border-white/10 text-xs p-1.5 rounded-lg focus:ring-0 ${payColor} font-bold text-center appearance-none cursor-pointer">
-                            <option value="Pendente" ${proj.payment==='Pendente'?'selected':''} class="text-orange-400 bg-zinc-900">Pendente</option>
-                            <option value="50%" ${proj.payment==='50%'?'selected':''} class="text-blue-400 bg-zinc-900">50% Pago</option>
-                            <option value="100%" ${proj.payment==='100%'?'selected':''} class="text-green-400 bg-zinc-900">100% Pago</option>
-                        </select>
-                    </td>
-                    <td class="p-3 text-zinc-400">${formatDateBR(proj.payDate)}</td>
-                    <td class="p-3 text-center align-middle">${driveContent}</td>
-                    <td class="p-3 text-right">
-                        <button onclick="window.removeProject('${proj.id}')" class="text-zinc-600 hover:text-red-500 transition-all transform hover:scale-110 w-8 h-8 rounded-full bg-black/20 flex items-center justify-center ml-auto">
-                            <i class="fa-solid fa-trash text-xs"></i>
-                        </button>
-                    </td>
+            const pool = document.getElementById('projectPool');
+            document.getElementById('projectCount').innerText = cloudData.projects.length;
+            pool.innerHTML = '';
+            cloudData.projects.forEach(p => {
+                const el = document.createElement('div');
+                el.className = "bg-white p-4 border border-slate-200 rounded-2xl shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all group relative border-l-4 animate-fade-in";
+                el.style.borderLeftColor = p.color.border;
+                el.draggable = true;
+                el.innerHTML = `
+                    <div class="font-bold text-slate-800 text-sm mb-1 truncate pr-6">${p.name}</div>
+                    <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">${p.priority}</span>
+                    <button onclick="removeProject('${p.id}')" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
                 `;
-                els.list.appendChild(tr);
+                el.addEventListener('dragstart', (e) => { e.dataTransfer.setData('projectId', p.id); el.classList.add('drag-ghost'); });
+                el.addEventListener('dragend', () => el.classList.remove('drag-ghost'));
+                pool.appendChild(el);
             });
         }
+
+        function renderTodayDashboard() {
+            const today = new Date();
+            const dateKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+            const container = document.getElementById('todayTaskList');
+            const noTasks = document.getElementById('noTasksToday');
+            document.getElementById('todayDisplayDate').innerText = today.toLocaleDateString('pt-pt', { weekday: 'long', day: 'numeric', month: 'long' });
+            container.innerHTML = '';
+            const tasks = cloudData.schedule[dateKey] || [];
+            if (tasks.length === 0) noTasks.classList.remove('hidden');
+            else {
+                noTasks.classList.add('hidden');
+                tasks.forEach((task, idx) => {
+                    const el = document.createElement('div');
+                    el.className = `p-5 rounded-[1.8rem] border flex items-center justify-between transition-all ${task.status === 'done' ? 'bg-slate-50 opacity-60' : 'bg-white shadow-sm border-slate-100'}`;
+                    el.style.borderLeft = `5px solid ${task.color.border}`;
+                    el.innerHTML = `
+                        <div class="flex items-center gap-4 flex-1 truncate">
+                            <button onclick="toggleTaskStatus('${dateKey}', ${idx})" class="w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${task.status === 'done' ? 'bg-indigo-600 border-indigo-600' : 'border-slate-200'}">
+                                ${task.status === 'done' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+                            </button>
+                            <div class="truncate">
+                                <h4 class="font-bold text-sm truncate ${task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800'}">${task.name}</h4>
+                                <div class="flex items-center gap-2 mt-0.5"><span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${task.type}</span></div>
+                            </div>
+                        </div>`;
+                    container.appendChild(el);
+                });
+            }
+            const done = tasks.filter(t => t.status === 'done').length;
+            const progress = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressText').innerText = `Progresso: ${progress}%`;
+        }
+
+        function renderCalendars() {
+            const wrapper = document.getElementById('calendarsWrapper');
+            wrapper.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const monthDate = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + i, 1);
+                wrapper.appendChild(createMonthUI(monthDate));
+            }
+        }
+
+        function createMonthUI(date) {
+            const monthName = date.toLocaleDateString('pt-pt', { month: 'long', year: 'numeric' });
+            const section = document.createElement('div');
+            section.className = "animate-fade-in";
+            section.innerHTML = `<h3 class="text-lg font-bold text-slate-400 mb-6 capitalize px-4">${monthName}</h3><div class="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-200/30">${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => `<div class="bg-slate-50 py-3 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">${d}</div>`).join('')}${Array(new Date(date.getFullYear(), date.getMonth(), 1).getDay()).fill('<div class="bg-white/40 min-h-[140px]"></div>').join('')}${Array.from({length: new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()}, (_, i) => i + 1).map(day => {
+                        const dateKey = `${date.getFullYear()}-${date.getMonth()}-${day}`;
+                        const isToday = new Date().toLocaleDateString() === new Date(date.getFullYear(), date.getMonth(), day).toLocaleDateString();
+                        return `<div onclick="openDayModal('${dateKey}', '${monthName}', ${day})" data-date="${dateKey}" class="bg-white min-h-[140px] p-4 flex flex-col gap-2 transition-all hover:bg-slate-50 cursor-pointer relative group day-cell">
+                                <span class="text-[11px] font-black ${isToday ? 'bg-indigo-600 text-white w-7 h-7 flex items-center justify-center rounded-xl shadow-lg' : 'text-slate-200 group-hover:text-indigo-400'} transition-all">${day}</span>
+                                <div id="drop-${dateKey}" class="flex-1 space-y-2 overflow-hidden pb-2"></div>
+                            </div>`;
+                    }).join('')}</div>`;
+            setTimeout(() => {
+                section.querySelectorAll('.day-cell').forEach(cell => {
+                    const dateKey = cell.dataset.date;
+                    cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.classList.add('drop-target'); });
+                    cell.addEventListener('dragleave', () => cell.classList.remove('drop-target'));
+                    cell.addEventListener('drop', (e) => {
+                        e.preventDefault(); cell.classList.remove('drop-target');
+                        const pId = e.dataTransfer.getData('projectId');
+                        const project = cloudData.projects.find(p => p.id === pId);
+                        if (project) addTaskToSchedule(dateKey, project);
+                    });
+                    const container = document.getElementById(`drop-${dateKey}`);
+                    if (!container) return;
+                    (cloudData.schedule[dateKey] || []).forEach(t => {
+                        const tel = document.createElement('div');
+                        tel.className = `p-1.5 rounded-lg border text-[9px] font-bold truncate flex items-center justify-between ${t.status === 'done' ? 'bg-slate-50 opacity-40 grayscale' : 'bg-white shadow-sm'}`;
+                        tel.style.borderLeft = `3px solid ${t.color.border}`;
+                        tel.innerHTML = `<span>${t.name}</span>${t.recurrence !== 'none' ? '<div class="w-1 h-1 rounded-full bg-indigo-400 animate-pulse"></div>' : ''}`;
+                        container.appendChild(tel);
+                    });
+                });
+            }, 0);
+            return section;
+        }
+
+        window.openDayModal = (dateKey, monthName, day) => {
+            selectedDateKey = dateKey;
+            document.getElementById('dayModal').classList.remove('hidden');
+            document.getElementById('modalDateTitle').innerText = `${day} de ${monthName}`;
+            renderModalTasks();
+        };
+
+        window.closeModal = () => document.getElementById('dayModal').classList.add('hidden');
+
+        function renderModalTasks() {
+            const list = document.getElementById('modalTasksList');
+            list.innerHTML = '';
+            const tasks = cloudData.schedule[selectedDateKey] || [];
+            if (tasks.length === 0) list.innerHTML = `<div class="py-12 text-center text-slate-300 italic">Vazio.</div>`;
+            else {
+                tasks.forEach((task, idx) => {
+                    const div = document.createElement('div');
+                    div.className = "bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-6 animate-fade-in border-l-8";
+                    div.style.borderLeftColor = task.color.border;
+                    const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                    const daySelector = task.recurrence === 'weekly' ? `<div class="flex gap-2 mt-4">${weekDays.map((d, i) => `<button onclick="toggleRecurrenceDay(${idx}, ${i})" class="w-10 h-10 rounded-xl border-2 text-[10px] font-bold transition-all ${task.recurrenceDays?.includes(i) ? 'day-btn-active' : 'border-slate-100 text-slate-400 hover:border-indigo-100'}">${d}</button>`).join('')}</div>` : '';
+
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1"><h4 class="text-xl font-bold text-slate-800 tracking-tight">${task.name}</h4><span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">${task.priority} Prioridade</span></div>
+                            <button onclick="deleteTask(${idx})" class="text-slate-200 hover:text-red-500 transition-all p-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="space-y-2"><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria</label><select onchange="updateTaskDetail(${idx}, 'type', this.value)" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-sm outline-none">${typeOptions.map(o => `<option value="${o.id}" ${o.id === task.type ? 'selected' : ''}>${o.icon} ${o.label}</option>`).join('')}</select></div>
+                            <div class="space-y-2"><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resumo</label><input type="text" value="${task.notes || ''}" onchange="updateTaskDetail(${idx}, 'notes', this.value)" placeholder="..." class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-sm outline-none"></div>
+                        </div>
+                        <div class="space-y-2"><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalhes e Links</label><textarea onchange="updateTaskDetail(${idx}, 'description', this.value)" placeholder="Descrição ou link..." class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl text-sm outline-none min-h-[80px] resize-none">${task.description || ''}</textarea></div>
+                        <div class="bg-indigo-50/50 p-6 rounded-3xl space-y-4 border border-indigo-100/50">
+                            <div class="flex items-center justify-between">
+                                <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Recorrência</label><select onchange="updateTaskDetail(${idx}, 'recurrence', this.value)" class="bg-transparent text-sm font-bold text-indigo-600 outline-none">${recurrenceOptions.map(o => `<option value="${o.id}" ${o.id === task.recurrence ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>
+                                ${task.recurrence !== 'none' ? `<button onclick="propagateTask(${idx})" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">Propagar 90 dias</button>` : ''}
+                            </div>
+                            ${daySelector}
+                        </div>`;
+                    list.appendChild(div);
+                });
+            }
+        }
+
+        window.shareLink = () => { navigator.clipboard.writeText(window.location.href); showToast("Link copiado!"); };
+
+        function showToast(msg, bg = "bg-slate-900") {
+            const t = document.getElementById('toast');
+            t.className = `fixed bottom-10 left-1/2 -translate-x-1/2 ${bg} text-white px-8 py-4 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-3 transition-all duration-500 z-[100] border border-white/10`;
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('opacity-0', 'pointer-events-none'); t.classList.add('opacity-100');
+            setTimeout(() => { t.classList.add('opacity-0', 'pointer-events-none'); t.classList.remove('opacity-100'); }, 3500);
+        }
+
+        initAuth();
     </script>
 </body>
 </html>
